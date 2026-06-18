@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AURA</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #1A1A1E;
+  --surface: #26262C;
+  --border: #3A3A44;
+  --text: #FFFFFF;
+  --sub: #9B9BA8;
+  --dim: #5A5A68;
+  --aura: #8B5CF6; /* overridden per puzzle */
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; flex-direction: column; height: 100dvh; max-width: 430px; margin: 0 auto; position: relative; }
+.screen.active { display: flex; }
+
+/* ── AMBIENT AURA ── */
+.aura-orb {
+  position: fixed;
+  width: 340px; height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--aura) 0%, transparent 70%);
+  opacity: 0.13;
+  top: -80px; left: 50%; transform: translateX(-50%);
+  pointer-events: none;
+  transition: opacity 1.2s ease, background 1.5s ease;
+  animation: breathe 6s ease-in-out infinite;
+  z-index: 0;
+  filter: blur(20px);
+}
+.aura-orb.bloom {
+  opacity: 0.38;
+  width: 500px; height: 500px;
+  top: -140px;
+  animation: bloom-pulse 1.8s ease-out forwards;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.13; }
+  50% { transform: translateX(-50%) scale(1.08); opacity: 0.18; }
+}
+@keyframes bloom-pulse {
+  0% { opacity: 0.13; transform: translateX(-50%) scale(1); }
+  40% { opacity: 0.45; transform: translateX(-50%) scale(1.25); }
+  100% { opacity: 0.28; transform: translateX(-50%) scale(1.1); }
+}
+
+/* ── HEADER ── */
+header {
+  position: relative; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px; font-weight: 300; letter-spacing: 8px;
+  color: var(--text); text-transform: uppercase;
+}
+.logo span { color: var(--aura); transition: color 1s; }
+.hdr-right { font-size: 11px; color: var(--sub); letter-spacing: 1px; text-align: right; }
+.hdr-right b { color: var(--text); }
+.hdr-btn {
+  background: none; border: 1px solid var(--border); color: var(--sub);
+  width: 28px; height: 28px; border-radius: 50%; font-size: 13px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+
+/* ── HOW TO ── */
+.how-body { flex: 1; overflow-y: auto; padding: 28px 24px 8px; position: relative; z-index: 10; }
+.how-body h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px; font-weight: 300; color: var(--text);
+  margin-bottom: 6px; letter-spacing: 1px;
+}
+.how-tagline { font-size: 13px; color: var(--sub); margin-bottom: 28px; line-height: 1.6; }
+
+.rule { display: flex; gap: 14px; margin-bottom: 20px; }
+.ri {
+  width: 34px; height: 34px; border-radius: 10px; background: var(--surface);
+  border: 1px solid var(--border); display: flex; align-items: center;
+  justify-content: center; font-size: 16px; flex-shrink: 0; margin-top: 1px;
+}
+.rt { font-size: 13px; color: var(--sub); line-height: 1.65; }
+.rt b { color: var(--text); font-weight: 500; }
+
+.eg-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 18px 18px; margin: 20px 0;
+}
+.eg-label { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); margin-bottom: 14px; }
+.eg-clue {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px; font-weight: 300; font-style: italic;
+  color: var(--text); line-height: 1.5; margin-bottom: 10px;
+  padding-bottom: 10px; border-bottom: 1px solid var(--border);
+}
+.eg-clue:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.eg-clue .clue-n { font-family: 'DM Sans', sans-serif; font-size: 10px; font-style: normal; color: var(--dim); letter-spacing: 1px; display: block; margin-bottom: 4px; }
+
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+.start-btn {
+  margin: 18px 22px 24px;
+  height: 54px; border-radius: 14px; border: none;
+  background: var(--aura); color: white;
+  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+  letter-spacing: 3px; text-transform: uppercase; cursor: pointer;
+  transition: opacity 0.15s, background 1s;
+  flex-shrink: 0; position: relative; z-index: 10;
+}
+.start-btn:active { opacity: 0.8; }
+
+/* ── GAME AREA ── */
+.game-body { flex: 1; overflow-y: auto; padding: 0 22px; position: relative; z-index: 10; }
+
+/* puzzle meta */
+.puzzle-meta {
+  padding: 16px 0 12px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.meta-category {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim);
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 4px 10px; border-radius: 100px;
+}
+.meta-clues { font-size: 11px; color: var(--sub); }
+.meta-clues b { color: var(--text); }
+
+/* clue cards */
+.clues-list { display: flex; flex-direction: column; gap: 10px; padding-bottom: 12px; }
+
+.clue-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 16px 18px;
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.clue-card.locked {
+  background: transparent;
+  border-style: dashed; border-color: var(--border);
+  display: flex; align-items: center; justify-content: center;
+  padding: 14px 18px; cursor: pointer; opacity: 0.5;
+  transition: opacity 0.2s;
+}
+.clue-card.locked:active { opacity: 0.8; }
+.clue-card.locked .lock-text {
+  font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim);
+  display: flex; align-items: center; gap: 6px;
+}
+
+.clue-num {
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 7px;
+}
+.clue-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px; font-weight: 300; font-style: italic;
+  color: var(--text); line-height: 1.5;
+}
+
+/* dots */
+.dots-row { display: flex; gap: 7px; padding: 14px 0 10px; }
+.dot {
+  width: 11px; height: 11px; border-radius: 50%;
+  background: var(--border); transition: background 0.4s ease;
+  flex-shrink: 0;
+}
+.dot.used { background: var(--aura); }
+.dot.wrong { background: #E05C5C; }
+
+/* ── INPUT AREA ── */
+.input-area {
+  padding: 10px 22px 22px; flex-shrink: 0;
+  position: relative; z-index: 10;
+  border-top: 1px solid var(--border);
+}
+
+.guess-field {
+  width: 100%; background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 12px; padding: 14px 16px; color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 400;
+  outline: none; margin-top: 12px; transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+.guess-field::placeholder { color: var(--dim); }
+.guess-field:focus { border-color: var(--aura); }
+
+.input-actions { display: flex; gap: 8px; margin-top: 8px; }
+.reveal-btn {
+  flex: 0 0 auto; height: 48px; padding: 0 16px;
+  border-radius: 12px; border: 1.5px solid var(--border);
+  background: transparent; color: var(--sub);
+  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+  letter-spacing: 1px; cursor: pointer; white-space: nowrap;
+  transition: all 0.15s;
+}
+.reveal-btn:active { background: var(--surface); }
+.submit-btn {
+  flex: 1; height: 48px; border-radius: 12px; border: none;
+  background: var(--aura); color: white;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
+  transition: opacity 0.15s, background 1s;
+}
+.submit-btn:active { opacity: 0.8; }
+.submit-btn:disabled { opacity: 0.3; pointer-events: none; }
+
+.wrong-msg {
+  font-size: 12px; color: #E05C5C; margin-top: 7px;
+  min-height: 18px; text-align: center; letter-spacing: 0.3px;
+}
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: absolute; inset: 0;
+  background: rgba(26,26,30,0.92);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; z-index: 200; backdrop-filter: blur(8px);
+}
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 22px; padding: 28px 22px; width: 100%; text-align: center;
+  position: relative; overflow: hidden;
+}
+.modal-glow {
+  position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
+  width: 280px; height: 280px; border-radius: 50%;
+  background: radial-gradient(circle, var(--aura) 0%, transparent 70%);
+  opacity: 0.2; pointer-events: none; filter: blur(10px);
+}
+.m-eye { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); margin-bottom: 10px; }
+.m-answer {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 34px; font-weight: 400; margin-bottom: 4px;
+  color: var(--text); line-height: 1.2;
+}
+.m-category { font-size: 11px; color: var(--sub); margin-bottom: 18px; letter-spacing: 1px; }
+.m-score {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--bg); border-radius: 100px;
+  padding: 8px 18px; margin-bottom: 18px;
+  font-size: 13px; color: var(--sub);
+}
+.m-score b { color: var(--text); font-size: 15px; }
+
+.share-card {
+  background: var(--bg); border-radius: 12px; padding: 16px 14px;
+  margin-bottom: 16px; text-align: left;
+}
+.share-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.share-sub { font-size: 11px; color: var(--sub); margin-bottom: 10px; }
+.share-dots { font-size: 20px; letter-spacing: 3px; line-height: 1; }
+
+.m-btn {
+  width: 100%; height: 50px; border-radius: 12px; border: none;
+  background: var(--aura); color: white;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
+  margin-bottom: 9px; transition: opacity 0.15s;
+}
+.m-btn:active { opacity: 0.8; }
+.m-btn.sec {
+  background: transparent; border: 1px solid var(--border); color: var(--sub);
+  letter-spacing: 1px; text-transform: none; font-size: 13px;
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; top: 72px; left: 50%; transform: translateX(-50%) translateY(-8px);
+  background: var(--text); color: var(--bg); padding: 9px 20px; border-radius: 100px;
+  font-size: 12px; font-weight: 600; opacity: 0; transition: all 0.22s;
+  z-index: 300; white-space: nowrap; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+</style>
+</head>
+<body>
+
+<div class="aura-orb" id="aura-orb"></div>
+
+<!-- ══ HOW TO ══ -->
+<div id="how-to" class="screen active">
+  <header>
+    <div class="logo">A<span>U</span>RA</div>
+    <div class="hdr-right">Daily · #<b id="ht-num">—</b></div>
+  </header>
+  <div class="how-body">
+    <h2>What's the vibe?</h2>
+    <p class="how-tagline">Every day, someone or something famous is described through feeling alone — texture, color, mood, association. No names. No facts. Just aura.</p>
+
+    <div class="rule">
+      <div class="ri">✦</div>
+      <div class="rt">You're shown up to <b>5 clues</b>, one at a time. Each clue is a feeling, an image, a texture — never a fact.</div>
+    </div>
+    <div class="rule">
+      <div class="ri">◎</div>
+      <div class="rt">Guess after any clue. <b>Fewer clues used = better score.</b> Reveal a clue only when you're stuck.</div>
+    </div>
+    <div class="rule">
+      <div class="ri">◈</div>
+      <div class="rt">You get <b>3 wrong guesses</b> before you're locked out. Spelling counts — but we're forgiving about "the" and "a".</div>
+    </div>
+    <div class="rule">
+      <div class="ri">↗</div>
+      <div class="rt">Share your result as a dot trail — it shows how deep into the clues you had to go, without spoiling the answer.</div>
+    </div>
+
+    <div class="eg-card">
+      <div class="eg-label">Example — can you feel it?</div>
+      <div class="eg-clue"><span class="clue-n">CLUE 1</span>The color of money and envy, at 2am, in a city that never apologizes.</div>
+      <div class="eg-clue"><span class="clue-n">CLUE 2</span>A yellow taxi, a pretzel cart, steam rising from a grate.</div>
+      <div class="eg-clue"><span class="clue-n">CLUE 3</span>Everything is possible here, and somehow that's exhausting.</div>
+    </div>
+
+    <div class="divider"></div>
+    <div style="font-size:12px;color:var(--sub);line-height:1.7;">The answer, if you haven't guessed: <b style="color:var(--text)">New York City.</b> One puzzle a day. Same for everyone.</div>
+  </div>
+  <button class="start-btn" id="start-btn" onclick="startGame()">Feel today's aura →</button>
+</div>
+
+<!-- ══ GAME ══ -->
+<div id="game" class="screen">
+  <header>
+    <div class="logo">A<span id="g-logo-u">U</span>RA</div>
+    <div class="hdr-right">Daily · #<b id="g-num">—</b></div>
+    <button class="hdr-btn" onclick="goHow()">?</button>
+  </header>
+
+  <div class="game-body" id="game-body">
+    <div class="puzzle-meta">
+      <div class="meta-category" id="meta-cat">—</div>
+      <div class="meta-clues">Clue <b id="clue-count">1</b> of 5</div>
+    </div>
+    <div class="dots-row" id="dots-row"></div>
+    <div class="clues-list" id="clues-list"></div>
+  </div>
+
+  <div class="input-area">
+    <div class="wrong-msg" id="wrong-msg"></div>
+    <input class="guess-field" id="guess-field" type="text"
+      placeholder="Your guess…" autocomplete="off" autocorrect="off"
+      spellcheck="false" maxlength="60"
+      onkeydown="if(event.key==='Enter')submitGuess()">
+    <div class="input-actions">
+      <button class="reveal-btn" id="reveal-btn" onclick="revealNext()">Next clue ↓</button>
+      <button class="submit-btn" id="submit-btn" onclick="submitGuess()">Guess</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-glow"></div>
+      <div class="m-eye" id="m-eye">TODAY'S AURA</div>
+      <div class="m-answer" id="m-answer"></div>
+      <div class="m-category" id="m-cat-label"></div>
+      <div class="m-score" id="m-score"></div>
+      <div class="share-card">
+        <div class="share-title" id="s-title"></div>
+        <div class="share-sub" id="s-sub"></div>
+        <div class="share-dots" id="s-dots"></div>
+      </div>
+      <button class="m-btn" onclick="copyShare()">Copy result</button>
+      <button class="m-btn sec" onclick="goHow()">← How to play</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  PUZZLE BANK
+//  Each entry: { answer, category, aura (css color),
+//                clues: [5 vibe-only strings] }
+//  Clues go easiest-to-hardest in terms of guessability
+// ══════════════════════════════════════════════════════════
+const PUZZLES = [
+  {
+    answer: "Beyoncé",
+    category: "Person",
+    aura: "#C9A227",
+    clues: [
+      "The particular silence of an arena right before the lights go out.",
+      "Gold, but the kind that was earned — heavy, warm, unignorable.",
+      "She arrived at her own coronation and everyone already knew the words.",
+      "A discipline so total it looks like effortlessness from the outside.",
+      "Houston, late summer heat, the smell of something burning and something becoming."
+    ]
+  },
+  {
+    answer: "Paris",
+    category: "Place",
+    aura: "#B07DC3",
+    clues: [
+      "The specific melancholy of a café at 4pm, when the light goes gold and nobody is in a hurry.",
+      "Everything here is a little too beautiful to trust completely.",
+      "You came here with high expectations and somehow it still exceeded them, which is disorienting.",
+      "Rain on cobblestones, a boulangerie, someone arguing about cheese with complete sincerity.",
+      "Romantic only because it decided to be. Absolutely committed to the bit."
+    ]
+  },
+  {
+    answer: "Steve Jobs",
+    category: "Person",
+    aura: "#4A90D9",
+    clues: [
+      "The feeling of holding something and immediately understanding that everything before it was wrong.",
+      "Obsession that crossed into cruelty, and somehow the cruelty made the obsession feel more honest.",
+      "A black turtleneck. The word 'insanely.' A room full of people who forgot to breathe.",
+      "He made you want things you didn't know existed five minutes ago.",
+      "California perfectionism — the kind that believes beauty is moral, not decorative."
+    ]
+  },
+  {
+    answer: "New York City",
+    category: "Place",
+    aura: "#E8C84A",
+    clues: [
+      "The color of money and envy, at 2am, in a city that never apologizes.",
+      "Steam rising from a grate. A yellow cab. Someone eating a pretzel like they mean it.",
+      "Everything is possible here. Somehow that is also exhausting.",
+      "Eight million people each entirely convinced they are the main character.",
+      "The loneliest place in the world, which is exactly why you love it."
+    ]
+  },
+  {
+    answer: "The Beatles",
+    category: "Band",
+    aura: "#E84A5F",
+    clues: [
+      "A rooftop, January, a city below that doesn't understand what it's witnessing.",
+      "Four silhouettes crossing a road. The whole century listening.",
+      "The feeling of discovering something your parents loved and realizing they were right.",
+      "It sounds like what it felt like to be young in a world that was just starting to move fast.",
+      "Liverpool mist, Hamburg bars, screaming, genius, the end of something, the beginning of everything."
+    ]
+  },
+  {
+    answer: "Nike",
+    category: "Brand",
+    aura: "#FF5733",
+    clues: [
+      "The split second before you decide to push through.",
+      "A swoosh that carries more aspiration than most religions.",
+      "It's not the shoe. The shoe is a vehicle for something you already wanted to believe about yourself.",
+      "Air, rubber, the squeak of a gym floor, the specific pride of lacing up something new.",
+      "Just. Do. It. — the most successful therapy session ever sold as an ad."
+    ]
+  },
+  {
+    answer: "The Moon",
+    category: "Thing",
+    aura: "#8AAFCE",
+    clues: [
+      "Something vast and silver that makes you feel small in a way you actually enjoy.",
+      "It has no light of its own and yet everything is illuminated.",
+      "Every love song eventually mentions it, which means every love song is about the same longing.",
+      "Sailors steered by it. Wolves howled at it. We walked on it and felt strangely empty afterward.",
+      "A reminder, once a month, that there are things bigger than whatever is bothering you."
+    ]
+  },
+  {
+    answer: "Oprah Winfrey",
+    category: "Person",
+    aura: "#D4845A",
+    clues: [
+      "The particular warmth of someone who makes you feel seen by a crowd.",
+      "Chicago in winter, a studio audience, the collective intake of breath before a revelation.",
+      "She turned her own wounds into a permission slip for yours.",
+      "Generosity as a business model — and it worked, which is either inspiring or instructive.",
+      "The most powerful person in a room, who always looks like she's just happy you came."
+    ]
+  },
+  {
+    answer: "Tokyo",
+    category: "Place",
+    aura: "#E879A0",
+    clues: [
+      "Neon and vending machines and perfect order underneath all of it.",
+      "The quietest loud city in the world — volume everywhere, rudeness nowhere.",
+      "A 7-Eleven that sells things you can't explain in another language.",
+      "Ancient and instant, at the same time, on the same block.",
+      "Cherry blossoms in April — the whole city pausing to agree that temporary things can be beautiful."
+    ]
+  },
+  {
+    answer: "Michael Jordan",
+    category: "Person",
+    aura: "#CC3333",
+    clues: [
+      "The feeling of watching someone do something impossible and believing it was inevitable.",
+      "Air. Not the element — the feeling of it. Suspended.",
+      "A competitiveness so pure it crossed into something spiritual.",
+      "Chicago winters, the squeak of hardwood, a tongue between teeth at the apex of something.",
+      "He made you think the word 'greatest' could actually end a sentence."
+    ]
+  },
+  {
+    answer: "Coffee",
+    category: "Thing",
+    aura: "#8B5E3C",
+    clues: [
+      "The ritual before the day begins — when you're still allowed to not be okay.",
+      "Dark, hot, slightly bitter, and somehow exactly what you needed.",
+      "The smell hits first. Everything else waits.",
+      "A permission slip. Go ahead. Begin.",
+      "It tastes like effort, which is the point."
+    ]
+  },
+  {
+    answer: "The Internet",
+    category: "Thing",
+    aura: "#3B82F6",
+    clues: [
+      "The sensation of having access to everything and feeling somehow more empty.",
+      "It promised connection. It delivered something more complicated.",
+      "Library, bar, confessional, marketplace, and void — all at once, always open.",
+      "You remember the sound it made when it arrived. Then one day it stopped making that sound.",
+      "The greatest and strangest thing humanity has ever collectively built, used mostly for distraction."
+    ]
+  },
+  {
+    answer: "Coco Chanel",
+    category: "Person",
+    aura: "#1A1A1A",
+    clues: [
+      "The color black, before it was allowed to be elegant.",
+      "She removed things until what remained was undeniable.",
+      "Pearls on a woman who grew up with nothing, draped like a philosophy.",
+      "Paris between the wars, simplicity as a revolutionary act, a cigarette, a pair of scissors.",
+      "Fashion's great lesson: restraint is not a limitation. It is the point."
+    ]
+  },
+  {
+    answer: "Netflix",
+    category: "Brand",
+    aura: "#E50914",
+    clues: [
+      "The specific paralysis of infinite choice on a Friday night.",
+      "Are you still watching? Yes. No. I don't know. Leave me alone.",
+      "It replaced video stores, appointment television, and going outside, in that order.",
+      "Red. A sound — a single dramatic chord — a logo.",
+      "Entertainment that comes to you, forever, which turned out to change what entertainment means."
+    ]
+  },
+  {
+    answer: "Frida Kahlo",
+    category: "Person",
+    aura: "#C8442B",
+    clues: [
+      "Pain made into beauty, not to be healed but to be witnessed.",
+      "Flowers in her hair, a spine that became a subject, a country that became a costume.",
+      "She looked directly at the canvas and the canvas couldn't look away.",
+      "Mexico City, a blue house, monobrows, Diego, suffering painted so precisely it stops being sad.",
+      "The first self-portrait that said: I see myself, clearly, and I will not apologize for what I see."
+    ]
+  },
+  {
+    answer: "London",
+    category: "Place",
+    aura: "#6B8CAE",
+    clues: [
+      "Grey sky, red bus, the sense that history is still happening just underneath the pavement.",
+      "A city that takes itself seriously while pretending not to.",
+      "Pubs at noon. Queues for everything. Apologizing even when you're right.",
+      "It has survived enough that nothing surprises it anymore, which is both reassuring and sad.",
+      "The Thames in November, fog, a biscuit with tea, and the stubborn certainty that this is civilization."
+    ]
+  },
+  {
+    answer: "Taylor Swift",
+    category: "Person",
+    aura: "#9B59B6",
+    clues: [
+      "The feeling of a song that knows exactly what you were thinking at 17.",
+      "She kept the receipts. She always keeps the receipts.",
+      "Easter eggs, eras, friendship bracelets, the particular devotion of people who feel understood.",
+      "Country became pop became folk became phenomenon — each transformation a deliberate one.",
+      "Nashville to global stadium: the long game, played with complete intentionality."
+    ]
+  },
+  {
+    answer: "Space",
+    category: "Thing",
+    aura: "#1A0533",
+    clues: [
+      "The feeling of looking up on a clear night and understanding that understanding is not enough.",
+      "Endless. Silent. The most efficient argument against self-importance.",
+      "We sent a golden record into it. Music, greetings, the sound of rain. Just in case.",
+      "Every civilization that has ever looked up has made up stories about it because the truth is too large.",
+      "The final frontier, which is what you say about something you need to name so it doesn't name you."
+    ]
+  },
+  {
+    answer: "Apple",
+    category: "Brand",
+    aura: "#A2AAAD",
+    clues: [
+      "The unboxing. Slow, deliberate, the tissue paper a promise.",
+      "White and aluminum and the particular coldness of something designed to feel warm.",
+      "A garage in Cupertino, a think-different poster, the word 'revolutionary' used with a straight face.",
+      "The most profitable company on earth, built on the idea that beautiful things work better.",
+      "You paid more than you needed to, and you'd do it again."
+    ]
+  },
+  {
+    answer: "The Eiffel Tower",
+    category: "Thing",
+    aura: "#7DB5A0",
+    clues: [
+      "They hated it when it was built. Now it is impossible to imagine the sky without it.",
+      "Iron lace. A city's accidental mascot.",
+      "It lights up at night and everyone watching forgets, briefly, to be cynical.",
+      "More photographed than any person who has ever lived. Somehow still not overexposed.",
+      "Paris looked at an engineering project and decided: yes, this is beautiful. This is ours."
+    ]
+  },
+];
+
+// ── HELPERS ──
+function normalize(s) {
+  return s.toLowerCase()
+    .replace(/^(the |a |an )/,'')
+    .replace(/[^a-z0-9]/g,'')
+    .trim();
+}
+
+function getDayIndex() {
+  const epoch = new Date('2025-01-01T00:00:00Z');
+  return Math.floor((Date.now() - epoch) / 86400000) % PUZZLES.length;
+}
+
+function setAura(color) {
+  document.documentElement.style.setProperty('--aura', color);
+}
+
+// ── STATE ──
+let puzzle, cluesShown, wrongGuesses, gameOver, shareStr;
+const MAX_WRONG = 3;
+
+function goHow() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('how-to').classList.add('active');
+}
+
+function startGame() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('game').classList.add('active');
+  initGame();
+}
+
+function initGame() {
+  const idx = getDayIndex();
+  puzzle = PUZZLES[idx];
+  cluesShown = 1;
+  wrongGuesses = 0;
+  gameOver = false;
+  shareStr = '';
+
+  setAura(puzzle.aura);
+  document.getElementById('g-num').textContent = idx + 1;
+  document.getElementById('ht-num').textContent = idx + 1;
+  document.getElementById('meta-cat').textContent = puzzle.category;
+  document.getElementById('guess-field').value = '';
+  document.getElementById('wrong-msg').textContent = '';
+  document.getElementById('modal').style.display = 'none';
+
+  renderDots();
+  renderClues();
+  updateRevealBtn();
+}
+
+function renderDots() {
+  const row = document.getElementById('dots-row');
+  row.innerHTML = '';
+  for (let i = 0; i < puzzle.clues.length; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    if (i < cluesShown) d.classList.add('used');
+    row.appendChild(d);
+  }
+}
+
+function renderClues() {
+  const list = document.getElementById('clues-list');
+  list.innerHTML = '';
+
+  // revealed clues
+  for (let i = 0; i < cluesShown; i++) {
+    const card = document.createElement('div');
+    card.className = 'clue-card';
+    const num = document.createElement('div');
+    num.className = 'clue-num';
+    num.textContent = `Clue ${i + 1}`;
+    const txt = document.createElement('div');
+    txt.className = 'clue-text';
+    txt.textContent = `"${puzzle.clues[i]}"`;
+    card.appendChild(num);
+    card.appendChild(txt);
+    list.appendChild(card);
+  }
+
+  // locked clues
+  for (let i = cluesShown; i < puzzle.clues.length; i++) {
+    const card = document.createElement('div');
+    card.className = 'clue-card locked';
+    card.onclick = revealNext;
+    const inner = document.createElement('div');
+    inner.className = 'lock-text';
+    inner.innerHTML = `<span style="opacity:0.5">— — —</span> Clue ${i + 1} <span style="opacity:0.5">— — —</span>`;
+    card.appendChild(inner);
+    list.appendChild(card);
+  }
+
+  document.getElementById('clue-count').textContent = cluesShown;
+
+  // scroll to bottom
+  setTimeout(() => {
+    const body = document.getElementById('game-body');
+    body.scrollTop = body.scrollHeight;
+  }, 80);
+}
+
+function revealNext() {
+  if (gameOver) return;
+  if (cluesShown >= puzzle.clues.length) {
+    showToast('All clues revealed');
+    return;
+  }
+  cluesShown++;
+  renderDots();
+  renderClues();
+  updateRevealBtn();
+}
+
+function updateRevealBtn() {
+  const btn = document.getElementById('reveal-btn');
+  if (cluesShown >= puzzle.clues.length) {
+    btn.textContent = 'All clues shown';
+    btn.disabled = true;
+    btn.style.opacity = '0.3';
+  } else {
+    btn.textContent = `Next clue ↓`;
+    btn.disabled = false;
+    btn.style.opacity = '';
+  }
+}
+
+function submitGuess() {
+  if (gameOver) return;
+  const field = document.getElementById('guess-field');
+  const raw = field.value.trim();
+  if (!raw) return;
+
+  const guess = normalize(raw);
+  const answer = normalize(puzzle.answer);
+
+  if (guess === answer) {
+    // WIN
+    gameOver = true;
+    field.blur();
+    document.getElementById('aura-orb').classList.add('bloom');
+    setTimeout(() => showResult(true), 300);
+  } else {
+    wrongGuesses++;
+    field.value = '';
+    const pct = wrongGuesses / MAX_WRONG;
+
+    if (wrongGuesses >= MAX_WRONG) {
+      gameOver = true;
+      showResult(false);
+    } else {
+      const msgs = [
+        `Not quite — ${MAX_WRONG - wrongGuesses} guess${MAX_WRONG - wrongGuesses !== 1 ? 'es' : ''} left`,
+        `Still wrong — 1 guess left`,
+      ];
+      document.getElementById('wrong-msg').textContent = msgs[wrongGuesses - 1] || '';
+      // shake the field
+      field.style.animation = 'none';
+      void field.offsetWidth;
+      field.style.animation = 'shake 0.4s ease';
+      field.style.borderColor = '#E05C5C';
+      setTimeout(() => { field.style.borderColor = ''; field.style.animation = ''; }, 500);
+    }
+  }
+}
+
+// ── RESULT ──
+function showResult(won) {
+  const idx = getDayIndex();
+  const cluesUsed = cluesShown;
+
+  document.getElementById('m-eye').textContent = won ? 'YOU FELT IT' : 'TODAY\'S AURA WAS';
+  document.getElementById('m-answer').textContent = puzzle.answer;
+  document.getElementById('m-cat-label').textContent = puzzle.category.toUpperCase();
+
+  const scoreEl = document.getElementById('m-score');
+  if (won) {
+    const label = cluesUsed === 1 ? '⚡ First clue!' : cluesUsed <= 2 ? '✦ Sharp instinct' : cluesUsed <= 3 ? '◎ Good read' : '→ Got there';
+    scoreEl.innerHTML = `<b>${cluesUsed}</b> clue${cluesUsed !== 1 ? 's' : ''} &nbsp;·&nbsp; ${label}`;
+  } else {
+    scoreEl.innerHTML = `<span style="color:#E05C5C">◌ The aura escaped you today</span>`;
+  }
+
+  // share dots
+  const dots = [];
+  for (let i = 0; i < puzzle.clues.length; i++) {
+    if (i < cluesUsed - 1) dots.push('🟣'); // clues revealed before winning
+    else if (i === cluesUsed - 1 && won) dots.push('✨');
+    else if (i === cluesUsed - 1 && !won) dots.push('⚫');
+    else dots.push('⬜');
+  }
+  const dotsStr = dots.join('');
+
+  document.getElementById('s-title').textContent = `AURA #${idx + 1}`;
+  document.getElementById('s-sub').textContent = won ? `${cluesUsed}/5 clues` : `Did not get it`;
+  document.getElementById('s-dots').textContent = dotsStr;
+
+  shareStr = `AURA #${idx + 1}\n${puzzle.category}\n\n${dotsStr}\n\n${won ? `Got it in ${cluesUsed}/5 clues 👻` : `Couldn't place it 🌫️`}\nplay at: aura.game`;
+
+  document.getElementById('modal').style.display = 'flex';
+}
+
+function copyShare() {
+  navigator.clipboard.writeText(shareStr)
+    .then(() => showToast('Copied!'))
+    .catch(() => showToast('Copy the text above'));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// boot
+document.getElementById('ht-num').textContent = getDayIndex() + 1;
+const todayPuzzle = PUZZLES[getDayIndex()];
+setAura(todayPuzzle.aura);
+document.getElementById('start-btn').style.background = todayPuzzle.aura;
+</script>
+</body>
+</html>
