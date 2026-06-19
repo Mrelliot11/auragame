@@ -1,50 +1,332 @@
-// ── HELPERS ──
-function normalize(s) {
-  return s.toLowerCase()
+// ── THEME ──
+function initTheme() {
+  const saved = localStorage.getItem('aura_theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(saved || (prefersDark ? 'dark' : 'light'));
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('aura_theme', theme);
+  const isDark = theme === 'dark';
+  ['ht-theme-btn', 'g-theme-btn', 'st-theme-btn', 'ar-theme-btn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.textContent = isDark ? '◑' : '○';
+    btn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+  });
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+// ── SOUND ──
+let soundEnabled = false;
+let audioCtx;
+
+function initSound() {
+  soundEnabled = localStorage.getItem('aura_sound') === 'on';
+  syncSoundBtns();
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem('aura_sound', soundEnabled ? 'on' : 'off');
+  syncSoundBtns();
+  if (soundEnabled) playReveal();
+}
+
+function syncSoundBtns() {
+  ['ht-sound-btn', 'g-sound-btn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.setAttribute('aria-pressed', String(soundEnabled));
+    btn.setAttribute('aria-label', soundEnabled ? 'Disable sound' : 'Enable sound');
+    btn.classList.toggle('active', soundEnabled);
+  });
+}
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playTone(freq, type, duration, gain) {
+  if (!soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const vol = ctx.createGain();
+    osc.connect(vol);
+    vol.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.value = freq;
+    vol.gain.setValueAtTime(gain, ctx.currentTime);
+    vol.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+  } catch (e) {}
+}
+
+function playWin() {
+  playTone(523, 'sine', 0.25, 0.25);
+  setTimeout(() => playTone(659, 'sine', 0.25, 0.25), 140);
+  setTimeout(() => playTone(784, 'sine', 0.4,  0.25), 280);
+}
+
+function playWrong() {
+  playTone(180, 'square', 0.18, 0.15);
+}
+
+function playReveal() {
+  playTone(440, 'sine', 0.12, 0.12);
+}
+
+// ── HAPTICS ──
+function vibrate(pattern) {
+  if (navigator.vibrate) navigator.vibrate(pattern);
+}
+
+// ── ACCESSIBILITY ──
+function announce(msg) {
+  const el = document.getElementById('sr-announce');
+  el.textContent = '';
+  requestAnimationFrame(() => { el.textContent = msg; });
+}
+
+function trapFocus(el) {
+  const sel = 'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  const focusable = Array.from(el.querySelectorAll(sel));
+  if (!focusable.length) return;
+  focusable[0].focus();
+  el._trapHandler = function (e) {
+    if (e.key !== 'Tab') return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault(); first.focus();
+    }
+  };
+  el.addEventListener('keydown', el._trapHandler);
+}
+
+function releaseFocus(el) {
+  if (el._trapHandler) {
+    el.removeEventListener('keydown', el._trapHandler);
+    delete el._trapHandler;
+  }
+}
+
+// ── INTRO ──
+function showIntro() {
+  const intro = document.getElementById('intro');
+  if (!intro) return;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (localStorage.getItem('aura_visited') || reduced) {
+    intro.remove();
+    return;
+  }
+  localStorage.setItem('aura_visited', '1');
+  setTimeout(() => intro.remove(), 2200);
+}
+
+// ── COUNTDOWN ──
+let countdownInterval;
+
+function startCountdown() {
+  const el = document.getElementById('countdown');
+  if (!el) return;
+  clearInterval(countdownInterval);
+  function tick() {
+    const now = new Date();
+    const midnight = new Date();
+    midnight.setUTCHours(24, 0, 0, 0);
+    const diff = midnight - now;
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    el.textContent = `Next aura in ${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+  tick();
+  countdownInterval = setInterval(tick, 1000);
+}
+
+// ── DATE & PERSISTENCE ──
+function getUTCDateKey(daysAgo) {
+  daysAgo = daysAgo || 0;
+  const d = new Date(Date.now() - daysAgo * 86400000);
+  const y = d.getUTCFullYear();
+  const mo = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const da = String(d.getUTCDate()).padStart(2, '0');
+  return `aura_result_${y}-${mo}-${da}`;
+}
+
+function getTodayResult() {
+  const raw = localStorage.getItem(getUTCDateKey());
+  return raw ? JSON.parse(raw) : null;
+}
+
+function saveResult(won, cluesUsed) {
+  if (isReplay) return;
+  const key = getUTCDateKey();
+  if (localStorage.getItem(key)) return;
+  localStorage.setItem(key, JSON.stringify({ won, cluesUsed, ts: Date.now() }));
+  updateStats(won, cluesUsed);
+}
+
+// ── STATS ──
+function getStats() {
+  const raw = localStorage.getItem('aura_stats');
+  return raw ? JSON.parse(raw) : { currentStreak: 0, maxStreak: 0, totalPlayed: 0, totalWon: 0, distribution: [0, 0, 0, 0, 0] };
+}
+
+function saveStats(stats) {
+  localStorage.setItem('aura_stats', JSON.stringify(stats));
+}
+
+function updateStats(won, cluesUsed) {
+  const stats = getStats();
+  stats.totalPlayed++;
+  if (won) {
+    stats.totalWon++;
+    stats.distribution[cluesUsed - 1]++;
+    const yesterdayRaw = localStorage.getItem(getUTCDateKey(1));
+    if (yesterdayRaw && JSON.parse(yesterdayRaw).won) {
+      stats.currentStreak++;
+    } else {
+      stats.currentStreak = 1;
+    }
+    stats.maxStreak = Math.max(stats.maxStreak, stats.currentStreak);
+  } else {
+    stats.currentStreak = 0;
+  }
+  saveStats(stats);
+}
+
+// ── GUESS MATCHING ──
+const ABBREVIATIONS = {
+  nyc: 'new york city',
+  ny: 'new york city',
+  la: 'los angeles',
+  uk: 'united kingdom',
+  usa: 'united states of america',
+  us: 'united states',
+  mj: 'michael jordan',
+};
+
+function normalizeGuess(s) {
+  return s.normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
     .replace(/^(the |a |an )/, '')
     .replace(/[^a-z0-9]/g, '')
     .trim();
 }
 
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = [];
+  for (let i = 0; i <= m; i++) {
+    dp[i] = [i];
+    for (let j = 1; j <= n; j++) dp[i][j] = 0;
+  }
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) dp[i][j] = dp[i - 1][j - 1];
+      else dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+function checkGuess(raw, answerRaw) {
+  const guess = normalizeGuess(raw);
+  const answer = normalizeGuess(answerRaw);
+  if (guess === answer) return true;
+  const expanded = ABBREVIATIONS[guess];
+  if (expanded && normalizeGuess(expanded) === answer) return true;
+  const threshold = answer.length <= 4 ? 0 : answer.length <= 7 ? 1 : 2;
+  return levenshtein(guess, answer) <= threshold;
+}
+
+// ── HELPERS ──
 function getDayIndex() {
   const epoch = new Date('2025-01-01T00:00:00Z');
   return Math.floor((Date.now() - epoch) / 86400000) % PUZZLES.length;
+}
+
+function getDaysElapsed() {
+  const epoch = new Date('2025-01-01T00:00:00Z');
+  return Math.floor((Date.now() - epoch) / 86400000);
+}
+
+function getPuzzleIndexForDaysAgo(daysAgo) {
+  const epoch = new Date('2025-01-01T00:00:00Z');
+  const raw = Math.floor((Date.now() - daysAgo * 86400000 - epoch) / 86400000);
+  return ((raw % PUZZLES.length) + PUZZLES.length) % PUZZLES.length;
 }
 
 function setAura(color) {
   document.documentElement.style.setProperty('--aura', color);
 }
 
-// ── STATE ──
-let puzzle, cluesShown, wrongGuesses, gameOver, shareStr;
-const MAX_WRONG = 3;
-
+// ── NAVIGATION ──
 function goHow() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('how-to').classList.add('active');
+  setAura(PUZZLES[getDayIndex()].aura);
+}
+
+function goStats() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('stats').classList.add('active');
+  renderStats();
+}
+
+function goArchive() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('archive').classList.add('active');
+  renderArchive();
 }
 
 function startGame() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('game').classList.add('active');
-  initGame();
+  initGame(getDayIndex(), false);
 }
 
-function initGame() {
-  const idx = getDayIndex();
-  puzzle = PUZZLES[idx];
+// ── STATE ──
+let puzzle, cluesShown, wrongGuesses, gameOver, shareStr, isReplay, replayDaysAgo;
+const MAX_WRONG = 3;
+
+function initGame(puzzleIdx, replayMode) {
+  if (puzzleIdx === undefined) puzzleIdx = getDayIndex();
+  isReplay = !!replayMode;
+
+  puzzle = PUZZLES[puzzleIdx];
   cluesShown = 1;
   wrongGuesses = 0;
   gameOver = false;
   shareStr = '';
 
+  clearInterval(countdownInterval);
+  releaseFocus(document.getElementById('modal'));
+
   setAura(puzzle.aura);
-  document.getElementById('g-num').textContent = idx + 1;
-  document.getElementById('ht-num').textContent = idx + 1;
+  document.getElementById('g-num').textContent = puzzleIdx + 1;
   document.getElementById('meta-cat').textContent = puzzle.category;
   document.getElementById('guess-field').value = '';
   document.getElementById('wrong-msg').textContent = '';
   document.getElementById('modal').style.display = 'none';
+  document.getElementById('aura-orb').classList.remove('bloom');
+
+  const banner = document.getElementById('replay-banner');
+  banner.style.display = isReplay ? 'flex' : 'none';
 
   renderDots();
   renderClues();
@@ -56,10 +338,10 @@ function renderDots() {
   row.innerHTML = '';
   for (let i = 0; i < puzzle.clues.length; i++) {
     const d = document.createElement('div');
-    d.className = 'dot';
-    if (i < cluesShown) d.classList.add('used');
+    d.className = 'dot' + (i < cluesShown ? ' used' : '');
     row.appendChild(d);
   }
+  row.setAttribute('aria-label', `Clue ${cluesShown} of ${puzzle.clues.length} revealed`);
 }
 
 function renderClues() {
@@ -83,10 +365,14 @@ function renderClues() {
   for (let i = cluesShown; i < puzzle.clues.length; i++) {
     const card = document.createElement('div');
     card.className = 'clue-card locked';
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('aria-label', `Reveal clue ${i + 1}`);
     card.onclick = revealNext;
+    card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); revealNext(); } };
     const inner = document.createElement('div');
     inner.className = 'lock-text';
-    inner.innerHTML = `<span style="opacity:0.5">— — —</span> Clue ${i + 1} <span style="opacity:0.5">— — —</span>`;
+    inner.innerHTML = `<span aria-hidden="true">— — —</span> Clue ${i + 1} <span aria-hidden="true">— — —</span>`;
     card.appendChild(inner);
     list.appendChild(card);
   }
@@ -109,6 +395,9 @@ function revealNext() {
   renderDots();
   renderClues();
   updateRevealBtn();
+  playReveal();
+  vibrate(30);
+  announce(`Clue ${cluesShown} revealed.`);
 }
 
 function updateRevealBtn() {
@@ -130,27 +419,29 @@ function submitGuess() {
   const raw = field.value.trim();
   if (!raw) return;
 
-  const guess = normalize(raw);
-  const answer = normalize(puzzle.answer);
-
-  if (guess === answer) {
+  if (checkGuess(raw, puzzle.answer)) {
     gameOver = true;
     field.blur();
     document.getElementById('aura-orb').classList.add('bloom');
+    playWin();
+    vibrate([50, 50, 100]);
+    announce(`Correct! The answer is ${puzzle.answer}.`);
     setTimeout(() => showResult(true), 300);
   } else {
     wrongGuesses++;
     field.value = '';
+    playWrong();
+    vibrate(80);
 
     if (wrongGuesses >= MAX_WRONG) {
       gameOver = true;
+      announce(`Game over. The answer was ${puzzle.answer}.`);
       showResult(false);
     } else {
-      const msgs = [
-        `Not quite — ${MAX_WRONG - wrongGuesses} guess${MAX_WRONG - wrongGuesses !== 1 ? 'es' : ''} left`,
-        'Still wrong — 1 guess left',
-      ];
-      document.getElementById('wrong-msg').textContent = msgs[wrongGuesses - 1] || '';
+      const remaining = MAX_WRONG - wrongGuesses;
+      const msg = `Not quite — ${remaining} guess${remaining !== 1 ? 'es' : ''} left`;
+      document.getElementById('wrong-msg').textContent = msg;
+      announce(msg);
       field.style.animation = 'none';
       void field.offsetWidth;
       field.style.animation = 'shake 0.4s ease';
@@ -160,11 +451,14 @@ function submitGuess() {
   }
 }
 
+// ── RESULT ──
 function showResult(won) {
-  const idx = getDayIndex();
   const cluesUsed = cluesShown;
+  const puzzleIdx = isReplay ? getPuzzleIndexForDaysAgo(replayDaysAgo) : getDayIndex();
 
-  document.getElementById('m-eye').textContent = won ? 'YOU FELT IT' : 'TODAY\'S AURA WAS';
+  if (!isReplay) saveResult(won, cluesUsed);
+
+  document.getElementById('m-eye').textContent = won ? 'YOU FELT IT' : (isReplay ? 'THE AURA WAS' : 'TODAY\'S AURA WAS');
   document.getElementById('m-answer').textContent = puzzle.answer;
   document.getElementById('m-cat-label').textContent = puzzle.category.toUpperCase();
 
@@ -176,6 +470,14 @@ function showResult(won) {
     scoreEl.innerHTML = '<span style="color:#E05C5C">◌ The aura escaped you today</span>';
   }
 
+  const streakEl = document.getElementById('m-streak');
+  if (!isReplay && won) {
+    const stats = getStats();
+    streakEl.textContent = stats.currentStreak >= 2 ? `🔥 ${stats.currentStreak} day streak` : '';
+  } else {
+    streakEl.textContent = '';
+  }
+
   const dots = [];
   for (let i = 0; i < puzzle.clues.length; i++) {
     if (i < cluesUsed - 1) dots.push('🟣');
@@ -185,15 +487,154 @@ function showResult(won) {
   }
   const dotsStr = dots.join('');
 
-  document.getElementById('s-title').textContent = `AURA #${idx + 1}`;
+  document.getElementById('s-title').textContent = `AURA #${puzzleIdx + 1}`;
   document.getElementById('s-sub').textContent = won ? `${cluesUsed}/5 clues` : 'Did not get it';
   document.getElementById('s-dots').textContent = dotsStr;
 
-  shareStr = `AURA #${idx + 1}\n${puzzle.category}\n\n${dotsStr}\n\n${won ? `Got it in ${cluesUsed}/5 clues 👻` : `Couldn't place it 🌫️`}\nplay at: aura.game`;
+  shareStr = `AURA #${puzzleIdx + 1}\n${puzzle.category}\n\n${dotsStr}\n\n${won ? `Got it in ${cluesUsed}/5 clues 👻` : `Couldn't place it 🌫️`}\nplay at: aura.game`;
 
-  document.getElementById('modal').style.display = 'flex';
+  const backBtn = document.getElementById('m-back-btn');
+  backBtn.onclick = isReplay ? goArchive : goHow;
+  backBtn.textContent = isReplay ? '← Archive' : '← How to play';
+
+  const countdownEl = document.getElementById('countdown');
+  if (!isReplay) {
+    countdownEl.style.display = '';
+    startCountdown();
+  } else {
+    countdownEl.style.display = 'none';
+    clearInterval(countdownInterval);
+  }
+
+  const modal = document.getElementById('modal');
+  modal.style.display = 'flex';
+  trapFocus(modal);
 }
 
+// ── STATS SCREEN ──
+function renderStats() {
+  const body = document.getElementById('stats-body');
+  const stats = getStats();
+
+  if (stats.totalPlayed === 0) {
+    body.innerHTML = '<div class="stats-empty">No games played yet.<br>Come back after today\'s puzzle!</div>';
+    return;
+  }
+
+  const winPct = Math.round((stats.totalWon / stats.totalPlayed) * 100);
+  const maxVal = Math.max(...stats.distribution, 1);
+
+  body.innerHTML = `
+    <div class="stats-summary">
+      <div class="stat-tile"><div class="stat-val">${stats.totalPlayed}</div><div class="stat-lbl">Played</div></div>
+      <div class="stat-tile"><div class="stat-val">${winPct}</div><div class="stat-lbl">Win %</div></div>
+      <div class="stat-tile"><div class="stat-val">${stats.currentStreak}</div><div class="stat-lbl">Streak</div></div>
+      <div class="stat-tile"><div class="stat-val">${stats.maxStreak}</div><div class="stat-lbl">Best</div></div>
+    </div>
+    <div class="dist-label">Guess distribution</div>
+    ${stats.distribution.map((n, i) => {
+      const pct = Math.round((n / maxVal) * 100);
+      return `<div class="dist-row">
+        <div class="dist-num">Clue ${i + 1}</div>
+        <div class="dist-bar-wrap">
+          <div class="dist-bar" data-pct="${pct}" style="width:0%"></div>
+          <div class="dist-count">${n}</div>
+        </div>
+      </div>`;
+    }).join('')}
+  `;
+
+  requestAnimationFrame(() => {
+    body.querySelectorAll('.dist-bar').forEach(bar => {
+      bar.style.width = bar.dataset.pct + '%';
+    });
+  });
+}
+
+// ── ARCHIVE SCREEN ──
+function renderArchive() {
+  const list = document.getElementById('archive-list');
+  const daysElapsed = getDaysElapsed();
+  const maxDaysAgo = Math.min(daysElapsed, 29);
+
+  if (maxDaysAgo < 1) {
+    list.innerHTML = '<div class="archive-empty">No past puzzles yet.<br>Check back tomorrow!</div>';
+    return;
+  }
+
+  let html = '';
+  for (let daysAgo = 1; daysAgo <= maxDaysAgo; daysAgo++) {
+    const pIdx = getPuzzleIndexForDaysAgo(daysAgo);
+    const p = PUZZLES[pIdx];
+    const resultRaw = localStorage.getItem(getUTCDateKey(daysAgo));
+    const result = resultRaw ? JSON.parse(resultRaw) : null;
+
+    const d = new Date(Date.now() - daysAgo * 86400000);
+    const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+
+    const resultIcon = result
+      ? `<div class="archive-result">${result.won ? '✨' : '⚫'}</div>`
+      : '';
+
+    html += `
+      <div class="archive-item">
+        <div class="archive-info">
+          <div class="archive-meta">#${pIdx + 1} · ${dateStr.toUpperCase()} · ${p.category.toUpperCase()}</div>
+          <div class="archive-answer" style="color:${result ? p.aura : 'var(--dim)'}">
+            ${result ? p.answer : `Aura #${pIdx + 1}`}
+          </div>
+        </div>
+        <div class="archive-right">
+          ${resultIcon}
+          <button class="archive-play" onclick="startReplay(${daysAgo})" aria-label="Play Aura #${pIdx + 1}">
+            ${result ? 'Replay ↗' : 'Play ↗'}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  list.innerHTML = html;
+}
+
+function startReplay(daysAgo) {
+  replayDaysAgo = daysAgo;
+  const pIdx = getPuzzleIndexForDaysAgo(daysAgo);
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('game').classList.add('active');
+  initGame(pIdx, true);
+}
+
+// ── LOAD COMPLETED GAME ──
+function loadCompletedGame(result) {
+  const idx = getDayIndex();
+  puzzle = PUZZLES[idx];
+  cluesShown = Math.min(result.cluesUsed, puzzle.clues.length);
+  wrongGuesses = result.won ? 0 : MAX_WRONG;
+  gameOver = true;
+  isReplay = false;
+  replayDaysAgo = 0;
+
+  setAura(puzzle.aura);
+  document.getElementById('g-num').textContent = idx + 1;
+  document.getElementById('meta-cat').textContent = puzzle.category;
+  document.getElementById('guess-field').value = '';
+  document.getElementById('wrong-msg').textContent = '';
+  document.getElementById('modal').style.display = 'none';
+  document.getElementById('replay-banner').style.display = 'none';
+
+  if (result.won) document.getElementById('aura-orb').classList.add('bloom');
+
+  renderDots();
+  renderClues();
+  updateRevealBtn();
+
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('game').classList.add('active');
+  showResult(result.won);
+}
+
+// ── SHARE ──
 function copyShare() {
   navigator.clipboard.writeText(shareStr)
     .then(() => showToast('Copied!'))
@@ -209,7 +650,16 @@ function showToast(msg) {
 }
 
 // ── BOOT ──
+initTheme();
+initSound();
+showIntro();
+
 document.getElementById('ht-num').textContent = getDayIndex() + 1;
 const todayPuzzle = PUZZLES[getDayIndex()];
 setAura(todayPuzzle.aura);
 document.getElementById('start-btn').style.background = todayPuzzle.aura;
+
+const todayResult = getTodayResult();
+if (todayResult) {
+  loadCompletedGame(todayResult);
+}

@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="description" content="A daily vibe puzzle. Guess the person, place, or thing from feeling alone. No names. No facts. Just aura.">
+<meta name="theme-color" content="#1A1A1E">
 <title>AURA</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="favicon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -15,7 +19,18 @@
   --text: #FFFFFF;
   --sub: #9B9BA8;
   --dim: #5A5A68;
-  --aura: #8B5CF6; /* overridden per puzzle */
+  --aura: #8B5CF6;
+  --modal-bg: rgba(26,26,30,0.92);
+}
+
+[data-theme="light"] {
+  --bg: #F5F4F0;
+  --surface: #FFFFFF;
+  --border: #E0DED8;
+  --text: #1A1A1E;
+  --sub: #6B6B78;
+  --dim: #9B9BA8;
+  --modal-bg: rgba(245,244,240,0.92);
 }
 
 html, body {
@@ -25,11 +40,37 @@ html, body {
   font-family: 'DM Sans', sans-serif;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
+  transition: background 0.3s, color 0.3s;
 }
 
 /* ── SCREENS ── */
 .screen { display: none; flex-direction: column; height: 100dvh; max-width: 430px; margin: 0 auto; position: relative; }
 .screen.active { display: flex; }
+
+/* ── INTRO OVERLAY ── */
+.intro-overlay {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; pointer-events: none;
+  animation: introFadeOut 0.5s ease 1.7s forwards;
+}
+.intro-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 52px; font-weight: 300; letter-spacing: 18px;
+  color: var(--text); text-transform: uppercase;
+  animation: introFadeIn 0.9s ease forwards;
+  opacity: 0;
+}
+.intro-logo span { color: var(--aura); }
+
+@keyframes introFadeIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes introFadeOut {
+  to { opacity: 0; }
+}
 
 /* ── AMBIENT AURA ── */
 .aura-orb {
@@ -78,11 +119,16 @@ header {
 .logo span { color: var(--aura); transition: color 1s; }
 .hdr-right { font-size: 11px; color: var(--sub); letter-spacing: 1px; text-align: right; }
 .hdr-right b { color: var(--text); }
+.hdr-controls { display: flex; gap: 6px; align-items: center; }
 .hdr-btn {
   background: none; border: 1px solid var(--border); color: var(--sub);
   width: 28px; height: 28px; border-radius: 50%; font-size: 13px; font-weight: 600;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s, color 0.2s;
 }
+.hdr-btn:hover { border-color: var(--sub); color: var(--text); }
+.hdr-btn:focus-visible { outline: 2px solid var(--aura); outline-offset: 2px; }
+.hdr-btn.active { border-color: var(--aura); color: var(--aura); }
 
 /* ── HOW TO ── */
 .how-body { flex: 1; overflow-y: auto; padding: 28px 24px 8px; position: relative; z-index: 10; }
@@ -118,6 +164,15 @@ header {
 
 .divider { height: 1px; background: var(--border); margin: 20px 0; }
 
+.archive-link {
+  display: block; width: 100%; background: none; border: none;
+  padding: 12px 0 6px; text-align: center;
+  font-size: 12px; color: var(--sub); letter-spacing: 0.5px;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+  transition: color 0.15s;
+}
+.archive-link:hover { color: var(--text); }
+
 .start-btn {
   margin: 18px 22px 24px;
   height: 54px; border-radius: 14px; border: none;
@@ -128,11 +183,19 @@ header {
   flex-shrink: 0; position: relative; z-index: 10;
 }
 .start-btn:active { opacity: 0.8; }
+.start-btn:focus-visible { outline: 2px solid var(--aura); outline-offset: 3px; }
 
 /* ── GAME AREA ── */
 .game-body { flex: 1; overflow-y: auto; padding: 0 22px; position: relative; z-index: 10; }
 
-/* puzzle meta */
+.replay-banner {
+  display: none; align-items: center; justify-content: center; gap: 8px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 8px 22px; font-size: 11px; color: var(--sub);
+  letter-spacing: 1px; position: relative; z-index: 10; flex-shrink: 0;
+}
+.replay-banner b { color: var(--aura); }
+
 .puzzle-meta {
   padding: 16px 0 12px;
   display: flex; align-items: center; justify-content: space-between;
@@ -145,7 +208,6 @@ header {
 .meta-clues { font-size: 11px; color: var(--sub); }
 .meta-clues b { color: var(--text); }
 
-/* clue cards */
 .clues-list { display: flex; flex-direction: column; gap: 10px; padding-bottom: 12px; }
 
 .clue-card {
@@ -160,7 +222,8 @@ header {
   padding: 14px 18px; cursor: pointer; opacity: 0.5;
   transition: opacity 0.2s;
 }
-.clue-card.locked:active { opacity: 0.8; }
+.clue-card.locked:hover,
+.clue-card.locked:focus-visible { opacity: 0.8; outline: 2px solid var(--aura); outline-offset: 2px; }
 .clue-card.locked .lock-text {
   font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim);
   display: flex; align-items: center; gap: 6px;
@@ -176,7 +239,6 @@ header {
   color: var(--text); line-height: 1.5;
 }
 
-/* dots */
 .dots-row { display: flex; gap: 7px; padding: 14px 0 10px; }
 .dot {
   width: 11px; height: 11px; border-radius: 50%;
@@ -213,6 +275,7 @@ header {
   transition: all 0.15s;
 }
 .reveal-btn:active { background: var(--surface); }
+.reveal-btn:focus-visible { outline: 2px solid var(--aura); outline-offset: 2px; }
 .submit-btn {
   flex: 1; height: 48px; border-radius: 12px; border: none;
   background: var(--aura); color: white;
@@ -222,6 +285,7 @@ header {
 }
 .submit-btn:active { opacity: 0.8; }
 .submit-btn:disabled { opacity: 0.3; pointer-events: none; }
+.submit-btn:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 
 .wrong-msg {
   font-size: 12px; color: #E05C5C; margin-top: 7px;
@@ -231,7 +295,7 @@ header {
 /* ── MODAL ── */
 .modal-overlay {
   position: absolute; inset: 0;
-  background: rgba(26,26,30,0.92);
+  background: var(--modal-bg);
   display: flex; align-items: center; justify-content: center;
   padding: 24px; z-index: 200; backdrop-filter: blur(8px);
 }
@@ -252,22 +316,31 @@ header {
   font-size: 34px; font-weight: 400; margin-bottom: 4px;
   color: var(--text); line-height: 1.2;
 }
-.m-category { font-size: 11px; color: var(--sub); margin-bottom: 18px; letter-spacing: 1px; }
+.m-category { font-size: 11px; color: var(--sub); margin-bottom: 14px; letter-spacing: 1px; }
 .m-score {
   display: inline-flex; align-items: center; gap: 8px;
   background: var(--bg); border-radius: 100px;
-  padding: 8px 18px; margin-bottom: 18px;
+  padding: 8px 18px; margin-bottom: 8px;
   font-size: 13px; color: var(--sub);
 }
 .m-score b { color: var(--text); font-size: 15px; }
+.m-streak {
+  font-size: 12px; color: var(--aura); margin-bottom: 14px;
+  letter-spacing: 0.5px; min-height: 18px;
+}
 
 .share-card {
   background: var(--bg); border-radius: 12px; padding: 16px 14px;
-  margin-bottom: 16px; text-align: left;
+  margin-bottom: 12px; text-align: left;
 }
 .share-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
 .share-sub { font-size: 11px; color: var(--sub); margin-bottom: 10px; }
 .share-dots { font-size: 20px; letter-spacing: 3px; line-height: 1; }
+
+.countdown {
+  font-size: 11px; color: var(--dim); letter-spacing: 1px;
+  margin-bottom: 16px; font-variant-numeric: tabular-nums;
+}
 
 .m-btn {
   width: 100%; height: 50px; border-radius: 12px; border: none;
@@ -277,10 +350,73 @@ header {
   margin-bottom: 9px; transition: opacity 0.15s;
 }
 .m-btn:active { opacity: 0.8; }
+.m-btn:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .m-btn.sec {
   background: transparent; border: 1px solid var(--border); color: var(--sub);
   letter-spacing: 1px; text-transform: none; font-size: 13px;
 }
+
+/* ── STATS SCREEN ── */
+.stats-body { flex: 1; overflow-y: auto; padding: 24px 22px; position: relative; z-index: 10; }
+
+.stats-summary {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 28px;
+}
+.stat-tile {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 6px; text-align: center;
+}
+.stat-val { font-size: 26px; font-weight: 600; color: var(--text); line-height: 1; margin-bottom: 5px; }
+.stat-lbl { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--dim); }
+
+.dist-label { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); margin-bottom: 14px; }
+.dist-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+.dist-num { font-size: 11px; color: var(--sub); width: 40px; flex-shrink: 0; }
+.dist-bar-wrap {
+  flex: 1; height: 28px; background: var(--bg); border-radius: 7px;
+  overflow: hidden; position: relative;
+}
+.dist-bar {
+  height: 100%; background: var(--aura); border-radius: 7px;
+  transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 0;
+}
+.dist-bar.highlight { background: var(--aura); opacity: 1; }
+.dist-count {
+  position: absolute; right: 9px; top: 50%;
+  transform: translateY(-50%); font-size: 11px; color: var(--text);
+  font-weight: 500;
+}
+.stats-empty { font-size: 13px; color: var(--sub); text-align: center; padding: 32px 0; line-height: 1.7; }
+
+/* ── ARCHIVE SCREEN ── */
+.archive-body { flex: 1; overflow-y: auto; padding: 16px 22px 24px; position: relative; z-index: 10; }
+.archive-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px 16px; margin-bottom: 10px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.archive-info { min-width: 0; }
+.archive-meta {
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 4px;
+}
+.archive-answer {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px; font-weight: 300; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.archive-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.archive-result { font-size: 18px; }
+.archive-play {
+  background: none; border: 1px solid var(--border); color: var(--sub);
+  border-radius: 8px; padding: 6px 12px; font-size: 11px; font-weight: 500;
+  cursor: pointer; letter-spacing: 0.5px; white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s; font-family: 'DM Sans', sans-serif;
+}
+.archive-play:hover { border-color: var(--aura); color: var(--aura); }
+.archive-play:focus-visible { outline: 2px solid var(--aura); outline-offset: 2px; }
+.archive-empty { font-size: 13px; color: var(--sub); text-align: center; padding: 40px 0; line-height: 1.7; }
 
 /* ── TOAST ── */
 .toast {
@@ -290,6 +426,15 @@ header {
   z-index: 300; white-space: nowrap; pointer-events: none;
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── REDUCED MOTION ── */
+@media (prefers-reduced-motion: reduce) {
+  .aura-orb { animation: none !important; }
+  .intro-overlay { animation: none !important; opacity: 0 !important; }
+  .clue-card { animation: none !important; }
+  .dist-bar { transition: none !important; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
 
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(10px); }
@@ -306,6 +451,15 @@ header {
 </head>
 <body>
 
+<!-- Screen reader live region -->
+<div id="sr-announce" role="status" aria-live="polite" aria-atomic="true"
+  style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;"></div>
+
+<!-- First-visit intro animation -->
+<div id="intro" class="intro-overlay" aria-hidden="true">
+  <div class="intro-logo">A<span>U</span>RA</div>
+</div>
+
 <div class="aura-orb" id="aura-orb"></div>
 
 <!-- ══ HOW TO ══ -->
@@ -313,6 +467,11 @@ header {
   <header>
     <div class="logo">A<span>U</span>RA</div>
     <div class="hdr-right">Daily · #<b id="ht-num">—</b></div>
+    <div class="hdr-controls">
+      <button class="hdr-btn" id="ht-sound-btn" onclick="toggleSound()" aria-label="Enable sound" aria-pressed="false">♪</button>
+      <button class="hdr-btn" id="ht-theme-btn" onclick="toggleTheme()" aria-label="Switch to light mode">◑</button>
+      <button class="hdr-btn" onclick="goStats()" aria-label="Statistics">%</button>
+    </div>
   </header>
   <div class="how-body">
     <h2>What's the vibe?</h2>
@@ -344,6 +503,7 @@ header {
 
     <div class="divider"></div>
     <div style="font-size:12px;color:var(--sub);line-height:1.7;">The answer, if you haven't guessed: <b style="color:var(--text)">New York City.</b> One puzzle a day. Same for everyone.</div>
+    <button class="archive-link" onclick="goArchive()">View past puzzles →</button>
   </div>
   <button class="start-btn" id="start-btn" onclick="startGame()">Feel today's aura →</button>
 </div>
@@ -353,23 +513,32 @@ header {
   <header>
     <div class="logo">A<span id="g-logo-u">U</span>RA</div>
     <div class="hdr-right">Daily · #<b id="g-num">—</b></div>
-    <button class="hdr-btn" onclick="goHow()">?</button>
+    <div class="hdr-controls">
+      <button class="hdr-btn" id="g-sound-btn" onclick="toggleSound()" aria-label="Enable sound" aria-pressed="false">♪</button>
+      <button class="hdr-btn" id="g-theme-btn" onclick="toggleTheme()" aria-label="Switch to light mode">◑</button>
+      <button class="hdr-btn" onclick="goStats()" aria-label="Statistics">%</button>
+      <button class="hdr-btn" onclick="goHow()" aria-label="How to play">?</button>
+    </div>
   </header>
+
+  <div class="replay-banner" id="replay-banner" aria-live="polite">
+    <b>Replay mode</b> — results won't affect your stats
+  </div>
 
   <div class="game-body" id="game-body">
     <div class="puzzle-meta">
       <div class="meta-category" id="meta-cat">—</div>
       <div class="meta-clues">Clue <b id="clue-count">1</b> of 5</div>
     </div>
-    <div class="dots-row" id="dots-row"></div>
+    <div class="dots-row" id="dots-row" role="img" aria-label="Clue progress"></div>
     <div class="clues-list" id="clues-list"></div>
   </div>
 
   <div class="input-area">
-    <div class="wrong-msg" id="wrong-msg"></div>
+    <div class="wrong-msg" id="wrong-msg" role="alert" aria-live="assertive"></div>
     <input class="guess-field" id="guess-field" type="text"
       placeholder="Your guess…" autocomplete="off" autocorrect="off"
-      spellcheck="false" maxlength="60"
+      spellcheck="false" maxlength="60" aria-label="Your guess"
       onkeydown="if(event.key==='Enter')submitGuess()">
     <div class="input-actions">
       <button class="reveal-btn" id="reveal-btn" onclick="revealNext()">Next clue ↓</button>
@@ -377,24 +546,53 @@ header {
     </div>
   </div>
 
-  <div class="modal-overlay" id="modal" style="display:none;">
+  <div class="modal-overlay" id="modal" style="display:none;"
+    role="dialog" aria-modal="true" aria-labelledby="m-answer">
     <div class="modal">
       <div class="modal-glow"></div>
       <div class="m-eye" id="m-eye">TODAY'S AURA</div>
       <div class="m-answer" id="m-answer"></div>
       <div class="m-category" id="m-cat-label"></div>
       <div class="m-score" id="m-score"></div>
+      <div class="m-streak" id="m-streak" aria-live="polite"></div>
       <div class="share-card">
         <div class="share-title" id="s-title"></div>
         <div class="share-sub" id="s-sub"></div>
-        <div class="share-dots" id="s-dots"></div>
+        <div class="share-dots" id="s-dots" aria-hidden="true"></div>
       </div>
+      <div class="countdown" id="countdown" aria-live="off"></div>
       <button class="m-btn" onclick="copyShare()">Copy result</button>
-      <button class="m-btn sec" onclick="goHow()">← How to play</button>
+      <button class="m-btn sec" id="m-back-btn" onclick="goHow()">← How to play</button>
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<!-- ══ STATS ══ -->
+<div id="stats" class="screen">
+  <header>
+    <div class="logo">A<span>U</span>RA</div>
+    <div class="hdr-right">Statistics</div>
+    <div class="hdr-controls">
+      <button class="hdr-btn" id="st-theme-btn" onclick="toggleTheme()" aria-label="Switch to light mode">◑</button>
+      <button class="hdr-btn" onclick="goHow()" aria-label="Close">✕</button>
+    </div>
+  </header>
+  <div class="stats-body" id="stats-body"></div>
+</div>
+
+<!-- ══ ARCHIVE ══ -->
+<div id="archive" class="screen">
+  <header>
+    <div class="logo">A<span>U</span>RA</div>
+    <div class="hdr-right">Archive</div>
+    <div class="hdr-controls">
+      <button class="hdr-btn" id="ar-theme-btn" onclick="toggleTheme()" aria-label="Switch to light mode">◑</button>
+      <button class="hdr-btn" onclick="goHow()" aria-label="Close">✕</button>
+    </div>
+  </header>
+  <div class="archive-body" id="archive-list"></div>
 </div>
 
 <script src="puzzles.js"></script>
