@@ -545,6 +545,14 @@ function showResult(won) {
 
   if (!isReplay) saveResult(won, cluesUsed);
 
+  // On loss: reveal all remaining clues in the game background
+  if (!won && cluesShown < puzzle.clues.length) {
+    cluesShown = puzzle.clues.length;
+    renderDots();
+    renderClues();
+    updateRevealBtn();
+  }
+
   document.getElementById('m-eye').textContent = won ? 'YOU FELT IT' : (isReplay ? 'THE AURA WAS' : 'TODAY\'S AURA WAS');
   document.getElementById('m-answer').textContent = puzzle.answer;
   document.getElementById('m-cat-label').textContent = puzzle.category.toUpperCase();
@@ -563,6 +571,24 @@ function showResult(won) {
     streakEl.textContent = stats.currentStreak >= 2 ? `🔥 ${stats.currentStreak} day streak` : '';
   } else {
     streakEl.textContent = '';
+  }
+
+  // Show unrevealed clues inside the modal on loss
+  const missedEl = document.getElementById('m-missed');
+  if (!won && missedEl) {
+    const missed = puzzle.clues.slice(cluesUsed);
+    if (missed.length > 0) {
+      missedEl.innerHTML =
+        '<div class="m-missed-label">Clues you didn\'t see</div>' +
+        missed.map((clue, i) =>
+          `<div class="m-missed-clue"><span class="m-missed-num">Clue ${cluesUsed + i + 1}</span>"${clue}"</div>`
+        ).join('');
+      missedEl.style.display = '';
+    } else {
+      missedEl.style.display = 'none';
+    }
+  } else if (missedEl) {
+    missedEl.style.display = 'none';
   }
 
   const dots = [];
@@ -752,29 +778,63 @@ function renderStats() {
 }
 
 // ── ARCHIVE SCREEN ──
-function renderArchive() {
-  const list = document.getElementById('archive-list');
-  const daysElapsed = getDaysElapsed();
-  const maxDaysAgo = Math.min(daysElapsed, 29);
+let archiveShown = 60;
+let archiveFilter = 'all'; // 'all' | 'played' | 'unplayed'
 
-  if (maxDaysAgo < 1) {
+function setArchiveFilter(f) {
+  archiveFilter = f;
+  document.querySelectorAll('.filter-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === f);
+  });
+  renderArchiveItems();
+}
+
+function renderArchive() {
+  archiveShown = 60;
+  archiveFilter = 'all';
+  renderArchiveItems();
+  document.querySelectorAll('.filter-pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === 'all');
+  });
+}
+
+function renderArchiveItems() {
+  const list = document.getElementById('archive-list');
+  const savedScroll = list.scrollTop;
+  const daysElapsed = getDaysElapsed();
+
+  if (daysElapsed < 1) {
     list.innerHTML = '<div class="archive-empty">No past puzzles yet.<br>Check back tomorrow!</div>';
     return;
   }
 
   let html = '';
-  for (let daysAgo = 1; daysAgo <= maxDaysAgo; daysAgo++) {
+  let shown = 0;
+  let currentMonth = '';
+
+  for (let daysAgo = 1; daysAgo <= daysElapsed; daysAgo++) {
     const pIdx = getPuzzleIndexForDaysAgo(daysAgo);
     const p = PUZZLES[pIdx];
     const resultRaw = localStorage.getItem(getUTCDateKey(daysAgo));
     const result = resultRaw ? JSON.parse(resultRaw) : null;
 
+    // Apply filter
+    if (archiveFilter === 'played' && !result) continue;
+    if (archiveFilter === 'unplayed' && result) continue;
+
+    shown++;
+    if (shown > archiveShown) continue; // collect total count but don't render yet
+
     const d = new Date(Date.now() - daysAgo * 86400000);
+    const month = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
     const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
 
-    const resultIcon = result
-      ? `<div class="archive-result">${result.won ? '✨' : '⚫'}</div>`
-      : '';
+    if (month !== currentMonth) {
+      currentMonth = month;
+      html += `<div class="archive-month">${month.toUpperCase()}</div>`;
+    }
+
+    const resultIcon = result ? `<div class="archive-result">${result.won ? '✨' : '⚫'}</div>` : '';
 
     html += `
       <div class="archive-item">
@@ -790,11 +850,22 @@ function renderArchive() {
             ${result ? 'Replay ↗' : 'Play ↗'}
           </button>
         </div>
-      </div>
-    `;
+      </div>`;
+  }
+
+  if (shown > archiveShown) {
+    const remaining = shown - archiveShown;
+    html += `<button class="archive-load-more" onclick="archiveShown += 60; renderArchiveItems()">
+      Load ${Math.min(remaining, 60)} more
+    </button>`;
+  }
+
+  if (!html) {
+    html = '<div class="archive-empty">No puzzles match this filter yet.</div>';
   }
 
   list.innerHTML = html;
+  list.scrollTop = savedScroll;
 }
 
 function startReplay(daysAgo) {
