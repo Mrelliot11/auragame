@@ -1,0 +1,34 @@
+name = "aura-game"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# ── CRON: send daily push notification ──────────────────────────────────────
+# Fires at 07:00 UTC every day (just after midnight on the US West Coast)
+# The puzzle resets at 00:00 UTC, so this gives players ~7 hours before the nudge.
+[triggers]
+crons = ["0 7 * * *"]
+
+# ── KV NAMESPACES ────────────────────────────────────────────────────────────
+# Create these with:
+#   wrangler kv:namespace create AURA_STATS
+#   wrangler kv:namespace create AURA_STATS --preview
+#   wrangler kv:namespace create AURA_SUBS
+#   wrangler kv:namespace create AURA_SUBS --preview
+# Then paste the returned IDs below.
+
+[[kv_namespaces]]
+binding = "AURA_STATS"
+id = "REPLACE_WITH_STATS_KV_ID"
+preview_id = "REPLACE_WITH_STATS_KV_PREVIEW_ID"
+
+[[kv_namespaces]]
+binding = "AURA_SUBS"
+id = "REPLACE_WITH_SUBS_KV_ID"
+preview_id = "REPLACE_WITH_SUBS_KV_PREVIEW_ID"
+
+# ── SECRETS (do NOT store values here) ───────────────────────────────────────
+# Set with: wrangler secret put VAPID_PUBLIC_KEY   (paste value when prompted)
+#           wrangler secret put VAPID_PRIVATE_KEY
+#           wrangler secret put VAPID_EMAIL         (e.g. mailto:you@example.com)
+# Generate VAPID keys first: cd backend && npm run generate-keys

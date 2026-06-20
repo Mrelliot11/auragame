@@ -1,3 +1,15 @@
+// ── BACKEND CONFIG ──────────────────────────────────────────────────────────
+// 🔌 CONNECTION point 1 of 2: set to your deployed Cloudflare Worker URL.
+//    Enables global stats display and daily push notifications.
+//    Leave as null to run fully offline — all game features still work.
+const API_URL = null; // e.g. 'https://aura-game.YOUR_SUBDOMAIN.workers.dev'
+
+// 🔌 Connection point 2 of 2: VAPID public key for Web Push subscriptions.
+//    Run `cd backend && npm run generate-keys` to generate, then set the
+//    matching private key + email as Cloudflare Worker secrets.
+const PUSH_PUBLIC_KEY = null; // e.g. 'BPxxxxxxxxxxxxxxxx...'
+// ─────────────────────────────────────────────────────────────────────────────
+
 // ── THEME ──
 function initTheme() {
   const saved = localStorage.getItem('aura_theme');
@@ -176,6 +188,7 @@ function saveResult(won, cluesUsed) {
   if (localStorage.getItem(key)) return;
   localStorage.setItem(key, JSON.stringify({ won, cluesUsed, ts: Date.now() }));
   updateStats(won, cluesUsed);
+  reportResultToAPI(won, cluesUsed, getDayIndex());
 }
 
 // ── STATS ──
@@ -252,6 +265,79 @@ function checkGuess(raw, answerRaw) {
   if (expanded && normalizeGuess(expanded) === answer) return true;
   const threshold = answer.length <= 4 ? 0 : answer.length <= 7 ? 1 : 2;
   return levenshtein(guess, answer) <= threshold;
+}
+
+// ── BACKEND API ──────────────────────────────────────────────────────────────
+
+async function apiPost(path, body) {
+  if (!API_URL) return null;
+  try {
+    const r = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return r.ok ? r.json() : null;
+  } catch { return null; }
+}
+
+async function apiGet(path) {
+  if (!API_URL) return null;
+  try {
+    const r = await fetch(`${API_URL}${path}`);
+    return r.ok ? r.json() : null;
+  } catch { return null; }
+}
+
+function reportResultToAPI(won, cluesUsed, puzzleIdx) {
+  apiPost('/api/result', { puzzleIdx, won, cluesUsed });
+}
+
+async function fetchGlobalStats(puzzleIdx) {
+  const data = await apiGet(`/api/stats/${puzzleIdx}`);
+  if (!data || !data.total) return;
+  const el = document.getElementById('m-global');
+  if (!el) return;
+  const pct = Math.round((data.wins / data.total) * 100);
+  el.innerHTML = `
+    <div class="m-global-title">Global</div>
+    <div class="m-global-row">
+      <span>${data.total.toLocaleString()} players</span>
+      <span>${pct}% got it</span>
+    </div>`;
+  el.style.display = '';
+}
+
+// ── PUSH NOTIFICATIONS ───────────────────────────────────────────────────────
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  return Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+}
+
+async function subscribeToPush() {
+  if (!PUSH_PUBLIC_KEY || !API_URL) return;
+  if (!('PushManager' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+    if (existing) return;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(PUSH_PUBLIC_KEY),
+    });
+    await apiPost('/api/push/subscribe', sub.toJSON());
+  } catch {}
+}
+
+async function offerPushNotifications() {
+  if (!PUSH_PUBLIC_KEY || !API_URL) return;
+  if (!('PushManager' in window) || !('Notification' in window)) return;
+  if (Notification.permission === 'denied') return;
+  if (Notification.permission === 'granted') { subscribeToPush(); return; }
+  const result = await Notification.requestPermission();
+  if (result === 'granted') subscribeToPush();
 }
 
 // ── HELPERS ──
@@ -508,6 +594,16 @@ function showResult(won) {
   }
 
   shareCanvas = generateShareImage(won, cluesUsed, puzzleIdx, dotsStr);
+
+  const globalEl = document.getElementById('m-global');
+  if (globalEl) globalEl.style.display = 'none';
+  if (!isReplay) {
+    fetchGlobalStats(puzzleIdx);
+    if (won && !localStorage.getItem('aura_push_asked')) {
+      localStorage.setItem('aura_push_asked', '1');
+      setTimeout(offerPushNotifications, 1200);
+    }
+  }
 
   const modal = document.getElementById('modal');
   modal.style.display = 'flex';
