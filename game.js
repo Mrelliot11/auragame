@@ -366,7 +366,7 @@ function openAdmin() {
   const pw = prompt('Admin password:');
   if (pw === null) return; // cancelled
   if (pw === 'password') {
-    window.location.href = '/admin/';
+    window.location.href = '/admin.html';
   } else {
     showToast('Incorrect password');
   }
