@@ -456,6 +456,62 @@ header {
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+/* ── MISSED CLUES (loss modal) ── */
+.m-missed {
+  background: var(--bg); border-radius: 12px; padding: 14px 14px 10px;
+  margin-bottom: 12px; text-align: left;
+}
+.m-missed-label {
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 10px;
+}
+.m-missed-clue {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px; font-weight: 300; font-style: italic;
+  color: var(--sub); line-height: 1.5; padding-bottom: 8px;
+  margin-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+.m-missed-clue:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+.m-missed-num {
+  display: block; font-family: 'DM Sans', sans-serif;
+  font-size: 9px; font-style: normal; color: var(--dim);
+  letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px;
+}
+
+/* ── ARCHIVE FILTERS ── */
+.archive-filters {
+  display: flex; gap: 8px; padding: 14px 22px 2px;
+  flex-shrink: 0; position: relative; z-index: 10;
+}
+.filter-pill {
+  background: none; border: 1px solid var(--border); color: var(--sub);
+  border-radius: 100px; padding: 5px 14px; font-size: 11px; font-weight: 500;
+  font-family: 'DM Sans', sans-serif; letter-spacing: 0.5px;
+  cursor: pointer; transition: all 0.15s;
+}
+.filter-pill:hover { border-color: var(--sub); color: var(--text); }
+.filter-pill.active { border-color: var(--aura); color: var(--aura); background: transparent; }
+.filter-pill:focus-visible { outline: 2px solid var(--aura); outline-offset: 2px; }
+
+/* ── ARCHIVE MONTH HEADER ── */
+.archive-month {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--dim); padding: 18px 0 8px; border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+.archive-month:first-child { padding-top: 4px; }
+
+/* ── ARCHIVE LOAD MORE ── */
+.archive-load-more {
+  display: block; width: 100%; margin: 8px 0 24px;
+  background: none; border: 1px solid var(--border); color: var(--sub);
+  border-radius: 12px; padding: 14px; font-size: 12px; font-weight: 500;
+  font-family: 'DM Sans', sans-serif; cursor: pointer; letter-spacing: 0.5px;
+  transition: all 0.15s;
+}
+.archive-load-more:hover { border-color: var(--aura); color: var(--aura); }
+.archive-load-more:focus-visible { outline: 2px solid var(--aura); outline-offset: 2px; }
+
 /* ── REDUCED MOTION ── */
 @media (prefers-reduced-motion: reduce) {
   .aura-orb { animation: none !important; }
@@ -584,6 +640,7 @@ header {
       <div class="m-category" id="m-cat-label"></div>
       <div class="m-score" id="m-score"></div>
       <div class="m-streak" id="m-streak" aria-live="polite"></div>
+      <div class="m-missed" id="m-missed" style="display:none;"></div>
       <div class="m-global" id="m-global" style="display:none;" aria-live="polite"></div>
       <div class="share-card">
         <div class="share-title" id="s-title"></div>
@@ -623,6 +680,11 @@ header {
       <button class="hdr-btn" onclick="goHow()" aria-label="Close">✕</button>
     </div>
   </header>
+  <div class="archive-filters">
+    <button class="filter-pill active" data-filter="all" onclick="setArchiveFilter('all')">All</button>
+    <button class="filter-pill" data-filter="played" onclick="setArchiveFilter('played')">Played</button>
+    <button class="filter-pill" data-filter="unplayed" onclick="setArchiveFilter('unplayed')">Unplayed</button>
+  </div>
   <div class="archive-body" id="archive-list"></div>
 </div>
 
