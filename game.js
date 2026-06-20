@@ -812,7 +812,8 @@ function renderArchiveItems() {
   let shown = 0;
   let currentMonth = '';
 
-  for (let daysAgo = 1; daysAgo <= daysElapsed; daysAgo++) {
+  const maxDaysAgo = Math.min(daysElapsed, PUZZLES.length);
+  for (let daysAgo = 1; daysAgo <= maxDaysAgo; daysAgo++) {
     const pIdx = getPuzzleIndexForDaysAgo(daysAgo);
     const p = PUZZLES[pIdx];
     const resultRaw = localStorage.getItem(getUTCDateKey(daysAgo));
