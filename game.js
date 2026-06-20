@@ -362,10 +362,18 @@ function setAura(color) {
 }
 
 // ── NAVIGATION ──
+function updateStartBtn() {
+  const btn = document.getElementById('start-btn');
+  if (!btn) return;
+  const done = !!getTodayResult();
+  btn.textContent = done ? 'See today\'s result →' : 'Feel today\'s aura →';
+}
+
 function goHow() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('how-to').classList.add('active');
   setAura(PUZZLES[getDayIndex()].aura);
+  updateStartBtn();
 }
 
 function goStats() {
@@ -939,4 +947,5 @@ document.getElementById('ht-num').textContent = getDayIndex() + 1;
 const todayPuzzle = PUZZLES[getDayIndex()];
 setAura(todayPuzzle.aura);
 document.getElementById('start-btn').style.background = todayPuzzle.aura;
+updateStartBtn();
 
