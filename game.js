@@ -301,7 +301,7 @@ function startGame() {
 }
 
 // ── STATE ──
-let puzzle, cluesShown, wrongGuesses, gameOver, shareStr, isReplay, replayDaysAgo;
+let puzzle, cluesShown, wrongGuesses, gameOver, shareStr, shareCanvas, isReplay, replayDaysAgo;
 const MAX_WRONG = 3;
 
 function initGame(puzzleIdx, replayMode) {
@@ -313,6 +313,7 @@ function initGame(puzzleIdx, replayMode) {
   wrongGuesses = 0;
   gameOver = false;
   shareStr = '';
+  shareCanvas = null;
 
   clearInterval(countdownInterval);
   releaseFocus(document.getElementById('modal'));
@@ -506,9 +507,112 @@ function showResult(won) {
     clearInterval(countdownInterval);
   }
 
+  shareCanvas = generateShareImage(won, cluesUsed, puzzleIdx, dotsStr);
+
   const modal = document.getElementById('modal');
   modal.style.display = 'flex';
   trapFocus(modal);
+}
+
+// ── SHARE IMAGE ──
+function hexToRgb(hex) {
+  const h = hex.trim().replace('#', '');
+  const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function generateShareImage(won, cluesUsed, puzzleIdx, dotsStr) {
+  const S = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = S;
+  canvas.height = S;
+  const ctx = canvas.getContext('2d');
+
+  const auraHex = getComputedStyle(document.documentElement).getPropertyValue('--aura').trim();
+  const [ar, ag, ab] = hexToRgb(auraHex);
+
+  // Background
+  ctx.fillStyle = '#1A1A1E';
+  ctx.fillRect(0, 0, S, S);
+
+  // Aura glow
+  const glow = ctx.createRadialGradient(S / 2, S * 0.38, 0, S / 2, S * 0.38, S * 0.52);
+  glow.addColorStop(0, `rgba(${ar},${ag},${ab},0.5)`);
+  glow.addColorStop(1, `rgba(${ar},${ag},${ab},0)`);
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, S, S);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+
+  // AURA wordmark
+  ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.font = '300 100px "Cormorant Garamond", Georgia, serif';
+  ctx.fillText('AURA', S / 2, 210);
+
+  // Puzzle number + category
+  ctx.fillStyle = '#5A5A68';
+  ctx.font = '400 22px "DM Sans", Arial, sans-serif';
+  ctx.fillText(`#${puzzleIdx + 1}  ·  ${puzzle.category.toUpperCase()}`, S / 2, 258);
+
+  // Divider
+  ctx.strokeStyle = '#3A3A44';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(S / 2 - 90, 292);
+  ctx.lineTo(S / 2 + 90, 292);
+  ctx.stroke();
+
+  // Dot trail
+  ctx.font = '64px sans-serif';
+  ctx.fillText(dotsStr, S / 2, 420);
+
+  // Score
+  ctx.fillStyle = '#9B9BA8';
+  ctx.font = '300 28px "DM Sans", Arial, sans-serif';
+  ctx.fillText(won ? `${cluesUsed} of 5 clues` : 'did not get it', S / 2, 490);
+
+  // Answer
+  if (won) {
+    ctx.fillStyle = auraHex;
+    ctx.font = 'italic 300 86px "Cormorant Garamond", Georgia, serif';
+    if (ctx.measureText(puzzle.answer).width > S * 0.84) {
+      ctx.font = 'italic 300 58px "Cormorant Garamond", Georgia, serif';
+    }
+    ctx.fillText(puzzle.answer, S / 2, 612);
+  } else {
+    ctx.fillStyle = '#E05C5C';
+    ctx.font = '300 26px "DM Sans", Arial, sans-serif';
+    ctx.fillText('the aura escaped you today', S / 2, 600);
+  }
+
+  // Footer branding
+  ctx.fillStyle = '#3A3A44';
+  ctx.font = '400 22px "DM Sans", Arial, sans-serif';
+  ctx.fillText('aura.game', S / 2, S - 80);
+
+  return canvas;
+}
+
+async function saveShareImage() {
+  if (!shareCanvas) return;
+  shareCanvas.toBlob(async blob => {
+    const file = new File([blob], 'aura.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'AURA', text: shareStr });
+        return;
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), { href: url, download: 'aura.png' });
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 'image/png');
 }
 
 // ── STATS SCREEN ──
