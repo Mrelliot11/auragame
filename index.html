@@ -345,6 +345,18 @@ header {
   font-size: 12px; color: var(--aura); margin-bottom: 14px;
   letter-spacing: 0.5px; min-height: 18px;
 }
+.m-global {
+  background: var(--bg); border-radius: 10px; padding: 10px 14px;
+  margin-bottom: 12px; text-align: left;
+}
+.m-global-title {
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 6px;
+}
+.m-global-row {
+  display: flex; justify-content: space-between;
+  font-size: 12px; color: var(--sub);
+}
 
 .share-card {
   background: var(--bg); border-radius: 12px; padding: 16px 14px;
@@ -572,6 +584,7 @@ header {
       <div class="m-category" id="m-cat-label"></div>
       <div class="m-score" id="m-score"></div>
       <div class="m-streak" id="m-streak" aria-live="polite"></div>
+      <div class="m-global" id="m-global" style="display:none;" aria-live="polite"></div>
       <div class="share-card">
         <div class="share-title" id="s-title"></div>
         <div class="share-sub" id="s-sub"></div>
