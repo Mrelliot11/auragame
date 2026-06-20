@@ -381,6 +381,12 @@ function goArchive() {
 }
 
 function startGame() {
+  const result = getTodayResult();
+  if (result) {
+    // Already played today — restore the finished state and show the result modal
+    loadCompletedGame(result);
+    return;
+  }
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('game').classList.add('active');
   initGame(getDayIndex(), false);
@@ -931,7 +937,3 @@ const todayPuzzle = PUZZLES[getDayIndex()];
 setAura(todayPuzzle.aura);
 document.getElementById('start-btn').style.background = todayPuzzle.aura;
 
-const todayResult = getTodayResult();
-if (todayResult) {
-  loadCompletedGame(todayResult);
-}
