@@ -609,7 +609,7 @@ let activeCategory = 'All';
 let searchQuery = '';
 
 function buildList() {
-  const cats = ['All', ...new Set(PUZZLES.map(p => p.category))].sort((a, b) => a === 'All' ? -1 : a.localeCompare(b));
+  const cats = ['All', ...new Set(PUZZLES.map(p => p.category))].sort((a, b) => a === 'All' ? -1 : b === 'All' ? 1 : a.localeCompare(b));
   const filter = document.getElementById('cat-filter');
   filter.innerHTML = cats.map(c =>
     `<div class="cat-pill${c === 'All' ? ' active' : ''}" onclick="setCatFilter('${c}', this)">${c}</div>`
