@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#1A1A1E"/>
+  <defs>
+    <radialGradient id="g" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#8B5CF6" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="600" cy="280" r="300" fill="url(#g)"/>
+  <text x="600" y="320" font-family="Georgia,serif" font-size="180" font-weight="300"
+    fill="white" text-anchor="middle" opacity="0.95" letter-spacing="24">AURA</text>
+  <text x="600" y="390" font-family="Arial,sans-serif" font-size="26" font-weight="300"
+    fill="#9B9BA8" text-anchor="middle" letter-spacing="5">A DAILY VIBE PUZZLE</text>
+  <text x="600" y="570" font-family="Arial,sans-serif" font-size="20"
+    fill="#5A5A68" text-anchor="middle" letter-spacing="2">aura.game</text>
+</svg>
