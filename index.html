@@ -321,6 +321,18 @@ header {
   border-radius: 22px; padding: 28px 22px; width: 100%; text-align: center;
   position: relative; overflow: hidden;
 }
+.modal-close {
+  position: absolute; top: 14px; right: 14px;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: none; border: 1px solid var(--border);
+  color: var(--sub); font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: border-color 0.15s, color 0.15s;
+  z-index: 1;
+}
+.modal-close:hover { border-color: var(--sub); color: var(--text); }
+.modal-close:focus-visible { outline: 2px solid var(--aura); outline-offset: 2px; }
+
 .modal-glow {
   position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
   width: 280px; height: 280px; border-radius: 50%;
@@ -634,6 +646,7 @@ header {
   <div class="modal-overlay" id="modal" style="display:none;"
     role="dialog" aria-modal="true" aria-labelledby="m-answer">
     <div class="modal">
+      <button class="modal-close" id="m-close-btn" onclick="goHow()" aria-label="Close">✕</button>
       <div class="modal-glow"></div>
       <div class="m-eye" id="m-eye">TODAY'S AURA</div>
       <div class="m-answer" id="m-answer"></div>

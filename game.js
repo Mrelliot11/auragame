@@ -612,9 +612,12 @@ function showResult(won) {
 
   shareStr = `AURA #${puzzleIdx + 1}\n${puzzle.category}\n\n${dotsStr}\n\n${won ? `Got it in ${cluesUsed}/5 clues 👻` : `Couldn't place it 🌫️`}\nplay at: aura.game`;
 
+  const dest = isReplay ? goArchive : goHow;
   const backBtn = document.getElementById('m-back-btn');
-  backBtn.onclick = isReplay ? goArchive : goHow;
+  backBtn.onclick = dest;
   backBtn.textContent = isReplay ? '← Archive' : '← How to play';
+  const closeBtn = document.getElementById('m-close-btn');
+  if (closeBtn) { closeBtn.onclick = dest; closeBtn.setAttribute('aria-label', isReplay ? 'Back to archive' : 'Close'); }
 
   const countdownEl = document.getElementById('countdown');
   if (!isReplay) {
