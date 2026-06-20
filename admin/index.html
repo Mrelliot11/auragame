@@ -328,6 +328,10 @@ input[type="color"] { position: absolute; opacity: 0; width: 0; height: 0; }
             <select class="field-input" id="f-category" onchange="onFormChange()">
               <option value="Person">Person</option>
               <option value="Place">Place</option>
+              <option value="Animal">Animal</option>
+              <option value="Plant">Plant</option>
+              <option value="Band">Band</option>
+              <option value="Book">Book</option>
               <option value="Brand">Brand</option>
               <option value="Film">Film</option>
               <option value="Album">Album</option>
@@ -402,7 +406,7 @@ input[type="color"] { position: absolute; opacity: 0; width: 0; height: 0; }
   <!-- LIST TAB -->
   <div class="tab-panel" id="panel-list">
     <div class="list-header">
-      <div class="section-label" style="margin:0">All Puzzles (<span id="list-count">0</span>)</div>
+      <div class="section-label" style="margin:0">(<span id="list-label">All Puzzles</span>) (<span id="list-count">0</span>)</div>
       <input class="search-input" type="text" placeholder="Search answer or category…" oninput="filterList(this.value)">
     </div>
     <div class="cat-filter" id="cat-filter"></div>
@@ -614,8 +618,6 @@ function buildList() {
   filter.innerHTML = cats.map(c =>
     `<div class="cat-pill${c === 'All' ? ' active' : ''}" onclick="setCatFilter('${c}', this)">${c}</div>`
   ).join('');
-
-  document.getElementById('list-count').textContent = PUZZLES.length;
   renderList();
 }
 
@@ -638,8 +640,9 @@ function renderList() {
     const matchSearch = !searchQuery || p.answer.toLowerCase().includes(searchQuery) || p.category.toLowerCase().includes(searchQuery);
     return matchCat && matchSearch;
   });
-
   document.getElementById('no-results').style.display = filtered.length === 0 ? 'block' : 'none';
+  document.getElementById('list-label').textContent = activeCategory === 'All' ? 'All Puzzles' : activeCategory + ' Puzzles';
+  document.getElementById('list-count').textContent = filtered.length;
 
   tbody.innerHTML = filtered.map((p, _) => {
     const i = PUZZLES.indexOf(p);
