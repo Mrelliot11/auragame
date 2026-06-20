@@ -5,9 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="description" content="A daily vibe puzzle. Guess the person, place, or thing from feeling alone. No names. No facts. Just aura.">
 <meta name="theme-color" content="#1A1A1E">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://aura.game/">
+<meta property="og:title" content="AURA — daily vibe puzzle">
+<meta property="og:description" content="Every day, something famous is described through feeling alone. No names. No facts. Just aura.">
+<meta property="og:image" content="https://aura.game/og.svg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="AURA — daily vibe puzzle">
+<meta name="twitter:description" content="Every day, something famous is described through feeling alone. No names. No facts. Just aura.">
+<meta name="twitter:image" content="https://aura.game/og.svg">
+
 <title>AURA</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -597,5 +614,10 @@ header {
 
 <script src="puzzles.js"></script>
 <script src="game.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+</script>
 </body>
 </html>
