@@ -361,6 +361,17 @@ function setAura(color) {
   document.documentElement.style.setProperty('--aura', color);
 }
 
+// ── ADMIN ──
+function openAdmin() {
+  const pw = prompt('Admin password:');
+  if (pw === null) return; // cancelled
+  if (pw === 'password') {
+    window.location.href = '/admin/';
+  } else {
+    showToast('Incorrect password');
+  }
+}
+
 // ── NAVIGATION ──
 function updateStartBtn() {
   const btn = document.getElementById('start-btn');
