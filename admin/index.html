@@ -47,7 +47,10 @@
 
       <!-- LEFT: FORM -->
       <div>
-        <div class="section-label">Puzzle Details</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <div class="section-label" style="margin:0">Puzzle Details</div>
+          <button class="btn btn-sec" style="font-size:10px;padding:6px 10px;width:auto" onclick="resetForm()">+ New / Clear</button>
+        </div>
         <div class="dup-warning" id="dup-warning">⚠ An existing puzzle already has this answer.</div>
 
         <div class="form-card">
@@ -181,7 +184,9 @@
 <script>
 // ── CONFIG ──
 const ADMIN_PASSWORD = 'aura2025'; // change this line to update the password
-const EPOCH = new Date('2025-01-01T00:00:00Z');
+// Must match the rotation epoch in game.js — otherwise the scheduling dates
+// shown here are off from when puzzles actually appear to players.
+const EPOCH = new Date('2026-01-01T00:00:00Z');
 
 // ── STATE ── (declared early so openApp() auto-login can't fire before them)
 let activeCategory = 'All';
@@ -229,6 +234,10 @@ async function saveToDb() {
     showToast('Complete all fields before saving');
     return;
   }
+  if (!/^#[0-9A-Fa-f]{6}$/.test(aura) && !/^#[0-9A-Fa-f]{3}$/.test(aura)) {
+    showToast('Enter a valid hex aura color (e.g. #8B5CF6)');
+    return;
+  }
 
   const btn = document.getElementById('save-db-btn');
   btn.textContent = 'Saving…';
@@ -274,7 +283,7 @@ function checkPassword(e) {
 function openApp() {
   document.getElementById('gate').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  document.getElementById('hdr-count').textContent = PUZZLES.length + ' puzzles · ' + daysUntilRepeat() + ' days until cycle repeats';
+  document.getElementById('hdr-count').textContent = PUZZLES.length + ' puzzles · cycle repeats every ' + daysUntilRepeat() + ' days';
   initClues();
   buildList();
   onFormChange();
@@ -459,19 +468,18 @@ function filterList(q) {
 
 function renderList() {
   const tbody = document.getElementById('puzzle-tbody');
-  const filtered = PUZZLES.filter((p, i) => {
-    const matchCat = activeCategory === 'All' || p.category === activeCategory;
-    const matchSearch = !searchQuery || p.answer.toLowerCase().includes(searchQuery) || p.category.toLowerCase().includes(searchQuery);
-    return matchCat && matchSearch;
-  });
+  const filtered = PUZZLES
+    .map((p, i) => ({ p, i }))
+    .filter(({ p }) => {
+      const matchCat = activeCategory === 'All' || p.category === activeCategory;
+      const matchSearch = !searchQuery || p.answer.toLowerCase().includes(searchQuery) || p.category.toLowerCase().includes(searchQuery);
+      return matchCat && matchSearch;
+    });
   document.getElementById('no-results').style.display = filtered.length === 0 ? 'block' : 'none';
   document.getElementById('list-count').textContent = filtered.length;
   document.getElementById('list-label').textContent = activeCategory === 'All' ? 'All Puzzles' : activeCategory + ' Puzzles';
-  document.getElementById('list-label').textContent = activeCategory === 'All' ? 'All Puzzles' : activeCategory + ' Puzzles';
-  document.getElementById('list-count').textContent = filtered.length;
 
-  tbody.innerHTML = filtered.map((p, _) => {
-    const i = PUZZLES.indexOf(p);
+  tbody.innerHTML = filtered.map(({ p, i }) => {
     const date = new Date(EPOCH.getTime() + i * 86400000);
     const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
     return `<tr>
@@ -493,11 +501,26 @@ function loadPuzzle(i) {
   document.getElementById('f-aura').value = p.aura;
   document.getElementById('color-picker').value = p.aura;
   document.getElementById('color-swatch').style.background = p.aura;
+  // Rebuild the clue rows from scratch so no leftover text / reordering from a
+  // previously-loaded puzzle survives.
+  initClues();
   const textareas = document.querySelectorAll('.clue-textarea');
   p.clues.forEach((c, idx) => { if (textareas[idx]) textareas[idx].value = c; });
   switchTab('create', document.querySelector('.tab[onclick*="create"]'));
   onFormChange();
   showToast(`Loaded puzzle #${i + 1} — ${p.answer}`);
+}
+
+function resetForm() {
+  editingIdx = -1;
+  document.getElementById('f-answer').value = '';
+  document.getElementById('f-category').value = 'Person';
+  document.getElementById('f-aura').value = '#8B5CF6';
+  document.getElementById('color-picker').value = '#8B5CF6';
+  document.getElementById('color-swatch').style.background = '#8B5CF6';
+  initClues();
+  onFormChange();
+  document.getElementById('f-answer').focus();
 }
 
 function escHtml(s) {

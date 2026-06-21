@@ -186,8 +186,10 @@ function saveResult(won, cluesUsed) {
   const key = isReplay ? getUTCDateKey(replayDaysAgo) : getUTCDateKey();
   const existing = localStorage.getItem(key);
 
-  // For replays, always save (overwrite if exists). For fresh plays, save only once.
-  if (!isReplay && existing) return;
+  // Never overwrite a genuine stored result. Replaying a past day must not
+  // alter its original outcome (which would corrupt the archive streak); a
+  // replay only records a result for a day that was never played.
+  if (existing) return;
 
   const data = { won, cluesUsed, ts: Date.now() };
   localStorage.setItem(key, JSON.stringify(data));
@@ -468,7 +470,7 @@ async function startGame() {
 }
 
 // ── STATE ──
-let puzzle, cluesShown, wrongGuesses, gameOver, shareStr, shareCanvas, isReplay, replayDaysAgo;
+let puzzle, cluesShown, wrongGuesses, gameOver, shareStr, isReplay, replayDaysAgo;
 const MAX_WRONG = 3;
 
 function initGame(puzzleIdx, replayMode, puzzleData) {
@@ -480,7 +482,6 @@ function initGame(puzzleIdx, replayMode, puzzleData) {
   wrongGuesses = 0;
   gameOver = false;
   shareStr = '';
-  shareCanvas = null;
 
   clearInterval(countdownInterval);
   releaseFocus(document.getElementById('modal'));
@@ -691,12 +692,15 @@ function showResult(won) {
 
   shareStr = `AURA #${puzzleIdx + 1}\n${puzzle.category}\n\n${dotsStr}\n\n${won ? `Got it in ${cluesUsed}/5 clues 👻` : `Couldn't place it 🌫️`}\nmrelliot11.github.io/auragame`;
 
-  const dest = isReplay ? goArchive : goHow;
+  // Replays and live wins return to the archive; an unsolved live puzzle
+  // goes back to How to Play.
+  const toArchive = isReplay || won;
+  const dest = toArchive ? goArchive : goHow;
   const backBtn = document.getElementById('m-back-btn');
   backBtn.onclick = dest;
-  backBtn.textContent = isReplay ? '← Archive' : '← How to play';
+  backBtn.textContent = toArchive ? '← Archive' : '← How to play';
   const closeBtn = document.getElementById('m-close-btn');
-  if (closeBtn) { closeBtn.onclick = dest; closeBtn.setAttribute('aria-label', isReplay ? 'Back to archive' : 'Close'); }
+  if (closeBtn) { closeBtn.onclick = dest; closeBtn.setAttribute('aria-label', toArchive ? 'Back to archive' : 'Close'); }
 
   const countdownEl = document.getElementById('countdown');
   if (!isReplay) {
@@ -706,8 +710,6 @@ function showResult(won) {
     countdownEl.style.display = 'none';
     clearInterval(countdownInterval);
   }
-
-  shareCanvas = generateShareImage(won, cluesUsed, puzzleIdx, dotsStr);
 
   const globalEl = document.getElementById('m-global');
   if (globalEl) globalEl.style.display = 'none';
@@ -724,106 +726,11 @@ function showResult(won) {
   trapFocus(modal);
 }
 
-// ── SHARE IMAGE ──
+// ── COLOR UTIL ──
 function hexToRgb(hex) {
   const h = hex.trim().replace('#', '');
   const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-
-function generateShareImage(won, cluesUsed, puzzleIdx, dotsStr) {
-  const p = PUZZLES[puzzleIdx];
-  const S = 1080;
-  const canvas = document.createElement('canvas');
-  canvas.width = S;
-  canvas.height = S;
-  const ctx = canvas.getContext('2d');
-
-  const auraHex = getComputedStyle(document.documentElement).getPropertyValue('--aura').trim();
-  const [ar, ag, ab] = hexToRgb(auraHex);
-
-  // Background
-  ctx.fillStyle = '#1A1A1E';
-  ctx.fillRect(0, 0, S, S);
-
-  // Aura glow
-  const glow = ctx.createRadialGradient(S / 2, S * 0.38, 0, S / 2, S * 0.38, S * 0.52);
-  glow.addColorStop(0, `rgba(${ar},${ag},${ab},0.5)`);
-  glow.addColorStop(1, `rgba(${ar},${ag},${ab},0)`);
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, S, S);
-
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'alphabetic';
-
-  // AURA wordmark
-  ctx.fillStyle = 'rgba(255,255,255,0.92)';
-  ctx.font = '300 100px "Cormorant Garamond", Georgia, serif';
-  ctx.fillText('AURA', S / 2, 210);
-
-  // Puzzle number + category
-  ctx.fillStyle = '#5A5A68';
-  ctx.font = '400 22px "DM Sans", Arial, sans-serif';
-  ctx.fillText(`#${puzzleIdx + 1}  ·  ${p.category.toUpperCase()}`, S / 2, 258);
-
-  // Divider
-  ctx.strokeStyle = '#3A3A44';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(S / 2 - 90, 292);
-  ctx.lineTo(S / 2 + 90, 292);
-  ctx.stroke();
-
-  // Dot trail
-  ctx.font = '64px sans-serif';
-  ctx.fillText(dotsStr, S / 2, 420);
-
-  // Score
-  ctx.fillStyle = '#9B9BA8';
-  ctx.font = '300 28px "DM Sans", Arial, sans-serif';
-  ctx.fillText(won ? `${cluesUsed} of 5 clues` : 'did not get it', S / 2, 490);
-
-  // Answer
-  if (won) {
-    ctx.fillStyle = auraHex;
-    ctx.font = 'italic 300 86px "Cormorant Garamond", Georgia, serif';
-    if (ctx.measureText(p.answer).width > S * 0.84) {
-      ctx.font = 'italic 300 58px "Cormorant Garamond", Georgia, serif';
-    }
-    ctx.fillText(p.answer, S / 2, 612);
-  } else {
-    ctx.fillStyle = '#E05C5C';
-    ctx.font = '300 26px "DM Sans", Arial, sans-serif';
-    ctx.fillText('the aura escaped you today', S / 2, 600);
-  }
-
-  // Footer branding
-  ctx.fillStyle = '#3A3A44';
-  ctx.font = '400 22px "DM Sans", Arial, sans-serif';
-  ctx.fillText('mrelliot11.github.io/auragame', S / 2, S - 80);
-
-  return canvas;
-}
-
-async function saveShareImage() {
-  if (!shareCanvas) return;
-  shareCanvas.toBlob(async blob => {
-    const file = new File([blob], 'aura.png', { type: 'image/png' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: 'AURA', text: shareStr });
-        return;
-      } catch (e) {
-        if (e.name === 'AbortError') return;
-      }
-    }
-    const url = URL.createObjectURL(blob);
-    const a = Object.assign(document.createElement('a'), { href: url, download: 'aura.png' });
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 'image/png');
 }
 
 // ── STATS SCREEN ──
@@ -895,16 +802,14 @@ function renderArchiveItems() {
   const savedScroll = list.scrollTop;
   const daysElapsed = getDaysElapsed();
 
-  if (daysElapsed < 1) {
-    list.innerHTML = '<div class="archive-empty">No past puzzles yet.<br>Check back tomorrow!</div>';
-    return;
-  }
-
-  const maxDaysAgo = Math.min(daysElapsed, PUZZLES.length);
+  // Include today (daysAgo 0) at the head of the chain. Cap at length - 1 so
+  // today + past entries never exceed PUZZLES.length (no duplicates after a
+  // full rotation).
+  const maxDaysAgo = Math.min(daysElapsed, PUZZLES.length - 1);
   const items = [];
 
-  // Collect all items (most recent first)
-  for (let daysAgo = 1; daysAgo <= maxDaysAgo; daysAgo++) {
+  // Collect all items (most recent first, today first)
+  for (let daysAgo = 0; daysAgo <= maxDaysAgo; daysAgo++) {
     const pIdx = getPuzzleIndexForDaysAgo(daysAgo);
     const p = PUZZLES[pIdx];
     const key = getUTCDateKey(daysAgo);
@@ -915,7 +820,9 @@ function renderArchiveItems() {
     if (archiveFilter === 'unplayed' && result) continue;
 
     const d = new Date(Date.now() - daysAgo * 86400000);
-    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    const dateStr = daysAgo === 0
+      ? 'Today'
+      : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
     const monthKey = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
     items.push({ daysAgo, pIdx, p, result, dateStr, d, monthKey });
@@ -926,12 +833,14 @@ function renderArchiveItems() {
     return;
   }
 
-  // Compute streak from results
+  // Compute streak from results. An unplayed *today* doesn't break the streak
+  // (the day isn't over yet); a played-and-lost today does.
   let streak = 0;
-  for (let daysAgo = 1; daysAgo <= maxDaysAgo; daysAgo++) {
+  for (let daysAgo = 0; daysAgo <= maxDaysAgo; daysAgo++) {
     const resultRaw = localStorage.getItem(getUTCDateKey(daysAgo));
     const result = resultRaw ? JSON.parse(resultRaw) : null;
     if (result && result.won) streak++;
+    else if (daysAgo === 0 && !result) continue;
     else break;
   }
 
@@ -962,10 +871,21 @@ function renderArchiveItems() {
         <div class="archive-month-items constellation-thread" id="${monthId}" style="display: ${isExpanded ? 'block' : 'none'};">
     `;
 
-    groupItems.forEach(({ daysAgo, pIdx, p, result, dateStr }) => {
+    groupItems.forEach(({ daysAgo, pIdx, p, result, dateStr }, i) => {
       const played = !!result;
       const won = result && result.won;
       const num = String(pIdx + 1).padStart(3, '0');
+
+      // Connector to the next node: gradient from this node's color to the
+      // next one's. Unplayed puzzles contribute transparent, so the dotted
+      // line fades out toward unfinished games.
+      let connectorHtml = '';
+      if (i < groupItems.length - 1) {
+        const cTop = played ? p.aura : 'transparent';
+        const next = groupItems[i + 1];
+        const cBot = next.result ? next.p.aura : 'transparent';
+        connectorHtml = `<div class="constellation-connector" style="--c-top:${cTop};--c-bot:${cBot};"></div>`;
+      }
 
       let nodeClass = 'constellation-node';
       if (won) nodeClass += ' win';
@@ -991,16 +911,21 @@ function renderArchiveItems() {
         nodeHtml = `<div class="${nodeClass}" style="border: 1.5px solid #45454f; background: var(--bg);"></div>`;
       }
 
-      const actionText = played ? 'Replay ↗' : 'Play ↗';
+      // Today is played live (counts for stats) and, if already done, opens its
+      // result. Past days replay (no stats impact).
+      const isToday = daysAgo === 0;
+      const actionText = isToday ? (played ? 'View ↗' : 'Play ↗') : (played ? 'Replay ↗' : 'Play ↗');
+      const actionCall = isToday ? 'startGame()' : `startReplay(${daysAgo})`;
       html += `
         <div class="constellation-item">
+          ${connectorHtml}
           ${nodeHtml}
           <div class="constellation-content">
             <div class="constellation-eyebrow">${dateStr.toUpperCase()} · ${p.category.toUpperCase()}</div>
             <div class="constellation-answer" style="color:${answerColor};">${answerText}</div>
             <div class="constellation-clue">${clueLabel}</div>
           </div>
-          <button class="constellation-action" onclick="startReplay(${daysAgo})" aria-label="${actionText}">${actionText}</button>
+          <button class="constellation-action" onclick="${actionCall}" aria-label="${actionText}">${actionText}</button>
         </div>
       `;
     });

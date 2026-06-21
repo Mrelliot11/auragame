@@ -52,6 +52,19 @@ html, body {
   transition: background 0.3s, color 0.3s;
 }
 
+/* Hide scrollbars on scroll containers (scrolling stays functional) */
+.how-body, .game-body, .stats-body, .archive-body, .modal {
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* old Edge/IE */
+}
+.how-body::-webkit-scrollbar,
+.game-body::-webkit-scrollbar,
+.stats-body::-webkit-scrollbar,
+.archive-body::-webkit-scrollbar,
+.modal::-webkit-scrollbar {
+  display: none;                  /* WebKit/Blink */
+}
+
 /* ── SCREENS ── */
 .screen {
   display: none;
@@ -528,11 +541,6 @@ header {
 .archive-month-items.constellation-thread {
   position: relative;
   padding-left: 44px;
-  background: radial-gradient(circle, var(--border) 30%, transparent 30%);
-  background-size: 2px 6px;
-  background-position: 55px 0;
-  background-repeat: repeat-y;
-  background-attachment: local;
 }
 
 /* Constellation items (inside month groups) */
@@ -541,10 +549,31 @@ header {
   padding-bottom: 24px; position: relative;
 }
 
+/* Dotted connector between a node and the next one, gradient between their
+   aura colors. Runs in the gap *between* the orbs (starting below this node
+   and ending above the next) so the dots never sit on top of the glowing orbs.
+   Unplayed puzzles contribute `transparent`, so the line fades out. */
+.constellation-connector {
+  position: absolute;
+  top: 30px; bottom: 4px;
+  left: 13px;
+  width: 3px;
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom, var(--c-top) 15%, var(--c-bot) 85%);
+  -webkit-mask-image: radial-gradient(circle, #000 35%, transparent 38%);
+  mask-image: radial-gradient(circle, #000 35%, transparent 38%);
+  -webkit-mask-size: 3px 7px;
+  mask-size: 3px 7px;
+  -webkit-mask-repeat: repeat-y;
+  mask-repeat: repeat-y;
+  pointer-events: none;
+  z-index: 0;
+}
+
 .constellation-node {
   width: 24px; height: 24px; flex-shrink: 0;
   border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  position: relative; margin-top: 2px;
+  position: relative; margin-top: 2px; z-index: 1;
 }
 .constellation-node.win {
   width: 26px; height: 26px; margin-top: 0;
@@ -653,7 +682,6 @@ header {
   .archive-month-btn { padding: 10px 12px; font-size: 9px; }
   .month-count { margin: 0 4px; }
   .archive-month-items.constellation-thread { padding-left: 38px; }
-  .archive-month-items.constellation-thread::before { left: 18px; }
   .constellation-item { gap: 10px; padding-bottom: 16px; }
   .archive-filters { padding: 10px 14px 2px; }
   .stats-body { padding: 16px 14px; }
