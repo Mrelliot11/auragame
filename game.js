@@ -858,7 +858,6 @@ function renderStats() {
 }
 
 // ── ARCHIVE SCREEN ──
-let archiveShown = 60;
 let archiveFilter = 'all'; // 'all' | 'played' | 'unplayed'
 
 function setArchiveFilter(f) {
@@ -870,12 +869,16 @@ function setArchiveFilter(f) {
 }
 
 function renderArchive() {
-  archiveShown = 60;
   archiveFilter = 'all';
   renderArchiveItems();
   document.querySelectorAll('.filter-pill').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.filter === 'all');
   });
+}
+
+function toggleArchiveMonth(btn) {
+  const open = btn.classList.toggle('open');
+  btn.nextElementSibling.classList.toggle('collapsed', !open);
 }
 
 function renderArchiveItems() {
@@ -888,62 +891,72 @@ function renderArchiveItems() {
     return;
   }
 
-  let html = '';
-  let shown = 0;
-  let currentMonth = '';
-
+  // Group entries by month
+  const months = []; // [{ label, key, items: [] }]
+  const monthIndex = {};
   const maxDaysAgo = Math.min(daysElapsed, PUZZLES.length);
+
   for (let daysAgo = 1; daysAgo <= maxDaysAgo; daysAgo++) {
     const pIdx = getPuzzleIndexForDaysAgo(daysAgo);
     const p = PUZZLES[pIdx];
     const resultRaw = localStorage.getItem(getUTCDateKey(daysAgo));
     const result = resultRaw ? JSON.parse(resultRaw) : null;
 
-    // Apply filter
     if (archiveFilter === 'played' && !result) continue;
     if (archiveFilter === 'unplayed' && result) continue;
 
-    shown++;
-    if (shown > archiveShown) continue; // collect total count but don't render yet
-
     const d = new Date(Date.now() - daysAgo * 86400000);
-    const month = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    const monthKey = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
     const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
 
-    if (month !== currentMonth) {
-      currentMonth = month;
-      html += `<div class="archive-month">${month.toUpperCase()}</div>`;
+    if (!monthIndex[monthKey]) {
+      monthIndex[monthKey] = { label: monthKey, items: [] };
+      months.push(monthIndex[monthKey]);
     }
+    monthIndex[monthKey].items.push({ daysAgo, pIdx, p, result, dateStr });
+  }
 
-    const resultIcon = result ? `<div class="archive-result">${result.won ? '✨' : '⚫'}</div>` : '';
+  if (months.length === 0) {
+    list.innerHTML = '<div class="archive-empty">No puzzles match this filter yet.</div>';
+    return;
+  }
 
+  let html = '';
+  months.forEach((month, mIdx) => {
+    const isFirst = mIdx === 0;
+    const playedCount = month.items.filter(e => e.result).length;
+    const countLabel = `${playedCount}/${month.items.length}`;
     html += `
-      <div class="archive-item">
-        <div class="archive-info">
-          <div class="archive-meta">#${pIdx + 1} · ${dateStr.toUpperCase()} · ${p.category.toUpperCase()}</div>
-          <div class="archive-answer" style="color:${result ? p.aura : 'var(--dim)'}">
-            ${result ? p.answer : `Aura #${pIdx + 1}`}
+      <button class="archive-month-btn${isFirst ? ' open' : ''}" onclick="toggleArchiveMonth(this)">
+        <span class="archive-month-label">${month.label.toUpperCase()}</span>
+        <span class="archive-month-meta">
+          <span class="archive-month-count">${countLabel}</span>
+          <span class="archive-month-chevron">▾</span>
+        </span>
+      </button>
+      <div class="archive-month-items${isFirst ? '' : ' collapsed'}">`;
+
+    month.items.forEach(({ daysAgo, pIdx, p, result, dateStr }) => {
+      const resultIcon = result ? `<div class="archive-result">${result.won ? '✨' : '⚫'}</div>` : '';
+      html += `
+        <div class="archive-item">
+          <div class="archive-info">
+            <div class="archive-meta">#${pIdx + 1} · ${dateStr.toUpperCase()} · ${p.category.toUpperCase()}</div>
+            <div class="archive-answer" style="color:${result ? p.aura : 'var(--dim)'}">
+              ${result ? p.answer : `Aura #${pIdx + 1}`}
+            </div>
           </div>
-        </div>
-        <div class="archive-right">
-          ${resultIcon}
-          <button class="archive-play" onclick="startReplay(${daysAgo})" aria-label="Play Aura #${pIdx + 1}">
-            ${result ? 'Replay ↗' : 'Play ↗'}
-          </button>
-        </div>
-      </div>`;
-  }
+          <div class="archive-right">
+            ${resultIcon}
+            <button class="archive-play" onclick="startReplay(${daysAgo})" aria-label="Play Aura #${pIdx + 1}">
+              ${result ? 'Replay ↗' : 'Play ↗'}
+            </button>
+          </div>
+        </div>`;
+    });
 
-  if (shown > archiveShown) {
-    const remaining = shown - archiveShown;
-    html += `<button class="archive-load-more" onclick="archiveShown += 60; renderArchiveItems()">
-      Load ${Math.min(remaining, 60)} more
-    </button>`;
-  }
-
-  if (!html) {
-    html = '<div class="archive-empty">No puzzles match this filter yet.</div>';
-  }
+    html += `</div>`;
+  });
 
   list.innerHTML = html;
   list.scrollTop = savedScroll;
