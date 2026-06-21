@@ -528,6 +528,10 @@ header {
 .archive-month-items.constellation-thread {
   position: relative;
   padding-left: 44px;
+  background: linear-gradient(90deg, transparent 54px, var(--border) 54px, var(--border) 56px, transparent 56px);
+  background-size: 100% 24px;
+  background-repeat: repeat-y;
+  background-attachment: local;
 }
 
 /* Constellation items (inside month groups) */
@@ -540,12 +544,10 @@ header {
   width: 24px; height: 24px; flex-shrink: 0;
   border-radius: 50%; display: flex; align-items: center; justify-content: center;
   position: relative; margin-top: 2px;
-  box-shadow: 0 24px 0 -22px var(--border), 0 -24px 0 -22px var(--border);
 }
 .constellation-node.win {
   width: 26px; height: 26px; margin-top: 0;
   animation: auraPulse 3.6s ease-in-out infinite;
-  box-shadow: 0 28px 0 -26px var(--border), 0 -28px 0 -26px var(--border);
 }
 .constellation-content {
   flex: 1; min-width: 0; padding-top: 1px;
