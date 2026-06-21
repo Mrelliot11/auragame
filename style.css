@@ -495,18 +495,39 @@ header {
   padding: 18px 18px 24px;
   position: relative;
 }
-.constellation-thread {
-  position: relative;
-  padding-left: 44px;
+
+/* Month groups */
+.archive-month-group {
+  margin-bottom: 8px;
 }
-.constellation-line {
-  position: absolute; left: 55px; top: 8px; bottom: 0;
-  width: 2px; background: linear-gradient(180deg, var(--border) 0%, var(--border) 85%, rgba(58,58,68,0) 100%);
-  z-index: 0;
+.archive-month-btn {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; background: none; border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 14px;
+  margin-bottom: 12px; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; text-align: left;
+  transition: border-color 0.2s, background 0.2s;
+  color: var(--text);
 }
+.archive-month-btn:hover { border-color: var(--aura); }
+.month-label {
+  font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--sub);
+}
+.month-count {
+  font-size: 10px; color: var(--dim); margin: 0 6px;
+}
+.month-toggle {
+  font-size: 14px; color: var(--sub); font-weight: 300;
+}
+
+.archive-month-items {
+  display: block; margin-bottom: 16px;
+}
+
+/* Constellation items (inside month groups) */
 .constellation-item {
   display: flex; gap: 12px; align-items: flex-start;
-  padding-bottom: 24px; position: relative; z-index: 1;
+  padding-bottom: 20px; position: relative;
 }
 .constellation-node {
   width: 24px; height: 24px; flex-shrink: 0;
@@ -547,24 +568,6 @@ header {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.12); }
 }
-
-/* ── ARCHIVE MONTH ACCORDION ── */
-.archive-month-btn {
-  display: flex; align-items: center; justify-content: space-between;
-  width: 100%; background: none; border: none; border-bottom: 1px solid var(--border);
-  padding: 14px 0 10px; margin-bottom: 8px; cursor: pointer;
-  font-family: 'DM Sans', sans-serif; text-align: left;
-}
-.archive-month-btn:first-child { padding-top: 4px; }
-.archive-month-label { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); }
-.archive-month-meta { display: flex; align-items: center; gap: 10px; }
-.archive-month-count { font-size: 10px; color: var(--dim); }
-.archive-month-chevron {
-  font-size: 10px; color: var(--dim); transition: transform 0.2s; display: inline-block;
-}
-.archive-month-btn.open .archive-month-chevron { transform: rotate(180deg); }
-.archive-month-items { overflow: hidden; }
-.archive-month-items.collapsed { display: none; }
 
 /* ── TOAST ── */
 .toast {
@@ -634,10 +637,10 @@ header {
   .game-body { padding: 0 14px; }
   .input-area { padding: 8px 14px 16px; }
   .archive-body { padding: 14px 14px 20px; }
-  .archive-body.constellation { padding: 16px 14px 20px; }
-  .constellation-thread { padding-left: 38px; }
-  .constellation-line { left: 18px; }
-  .constellation-item { gap: 12px; padding-bottom: 20px; }
+  .archive-body.constellation { padding: 14px 12px 20px; }
+  .archive-month-btn { padding: 10px 12px; font-size: 9px; }
+  .month-count { margin: 0 4px; }
+  .constellation-item { gap: 10px; padding-bottom: 16px; }
   .archive-filters { padding: 10px 14px 2px; }
   .stats-body { padding: 16px 14px; }
   .stats-summary { gap: 6px; }

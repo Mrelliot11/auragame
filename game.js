@@ -915,8 +915,9 @@ function renderArchiveItems() {
 
     const d = new Date(Date.now() - daysAgo * 86400000);
     const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    const monthKey = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
-    items.push({ daysAgo, pIdx, p, result, dateStr, d });
+    items.push({ daysAgo, pIdx, p, result, dateStr, d, monthKey });
   }
 
   if (items.length === 0) {
@@ -936,57 +937,91 @@ function renderArchiveItems() {
   // Update header
   document.getElementById('archive-streak').textContent = streak > 0 ? `·${streak}-day streak` : '';
 
-  // Render constellation
-  let html = '<div class="constellation-thread"><div class="constellation-line"></div>';
+  // Group items by month
+  const monthGroups = {};
+  items.forEach(item => {
+    if (!monthGroups[item.monthKey]) monthGroups[item.monthKey] = [];
+    monthGroups[item.monthKey].push(item);
+  });
 
-  items.forEach(({ daysAgo, pIdx, p, result, dateStr }) => {
-    const played = !!result;
-    const won = result && result.won;
-    const num = String(pIdx + 1).padStart(3, '0');
+  // Render months as collapsible groups
+  let html = '';
+  Object.keys(monthGroups).forEach(monthKey => {
+    const groupItems = monthGroups[monthKey];
+    const monthId = monthKey.replace(/\s+/g, '-').toLowerCase();
+    const isExpanded = localStorage.getItem(`archive-expanded-${monthId}`) !== 'false';
 
-    let nodeClass = 'constellation-node';
-    if (won) nodeClass += ' win';
-    else if (played) nodeClass += ' loss';
-    else nodeClass += ' unplayed';
-
-    const answerColor = played ? p.aura : 'var(--dim)';
-    const answerText = played ? p.answer : `Aura #${num}`;
-    const clueLabel = won ? `Solved in ${result.cluesUsed} of 5 clues` : (played ? 'Missed — all 5 clues' : 'Not played yet');
-
-    // Build node with proper styling for aura glow
-    let nodeHtml = '';
-    if (won) {
-      // Win node: glowing orb with color-matched glow and animation
-      const rgb = hexToRgb(p.aura).join(',');
-      nodeHtml = `<div class="${nodeClass}" style="
-        background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), ${p.aura}, rgba(${rgb},0.15) 60%, transparent 75%);
-        box-shadow: 0 0 24px ${p.aura}dd, 0 0 12px ${p.aura}99, inset 0 0 10px ${p.aura}77;
-      "></div>`;
-    } else if (played) {
-      // Loss node: dim circle
-      nodeHtml = `<div class="${nodeClass}" style="background: ${p.aura}; opacity: 0.42;"></div>`;
-    } else {
-      // Unplayed node: hollow ring
-      nodeHtml = `<div class="${nodeClass}" style="border: 1.5px solid #45454f; background: transparent;"></div>`;
-    }
-
-    const actionText = played ? 'Replay ↗' : 'Play ↗';
     html += `
-      <div class="constellation-item">
-        ${nodeHtml}
-        <div class="constellation-content">
-          <div class="constellation-eyebrow">${dateStr.toUpperCase()} · ${p.category.toUpperCase()}</div>
-          <div class="constellation-answer" style="color:${answerColor};">${answerText}</div>
-          <div class="constellation-clue">${clueLabel}</div>
+      <div class="archive-month-group">
+        <button class="archive-month-btn" onclick="toggleArchiveMonth('${monthId}')" aria-expanded="${isExpanded}">
+          <span class="month-label">${monthKey}</span>
+          <span class="month-count">${groupItems.length}</span>
+          <span class="month-toggle">${isExpanded ? '−' : '+'}</span>
+        </button>
+        <div class="archive-month-items" id="${monthId}" style="display: ${isExpanded ? 'block' : 'none'};">
+    `;
+
+    groupItems.forEach(({ daysAgo, pIdx, p, result, dateStr }) => {
+      const played = !!result;
+      const won = result && result.won;
+      const num = String(pIdx + 1).padStart(3, '0');
+
+      let nodeClass = 'constellation-node';
+      if (won) nodeClass += ' win';
+      else if (played) nodeClass += ' loss';
+      else nodeClass += ' unplayed';
+
+      const answerColor = played ? p.aura : 'var(--dim)';
+      const answerText = played ? p.answer : `Aura #${num}`;
+      const clueLabel = won ? `Solved in ${result.cluesUsed} of 5 clues` : (played ? 'Missed — all 5 clues' : 'Not played yet');
+
+      // Build node with proper styling for aura glow
+      let nodeHtml = '';
+      if (won) {
+        const rgb = hexToRgb(p.aura).join(',');
+        nodeHtml = `<div class="${nodeClass}" style="
+          background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), ${p.aura}, rgba(${rgb},0.15) 60%, transparent 75%);
+          box-shadow: 0 0 24px ${p.aura}dd, 0 0 12px ${p.aura}99, inset 0 0 10px ${p.aura}77;
+        "></div>`;
+      } else if (played) {
+        nodeHtml = `<div class="${nodeClass}" style="background: ${p.aura}; opacity: 0.42;"></div>`;
+      } else {
+        nodeHtml = `<div class="${nodeClass}" style="border: 1.5px solid #45454f; background: transparent;"></div>`;
+      }
+
+      const actionText = played ? 'Replay ↗' : 'Play ↗';
+      html += `
+        <div class="constellation-item">
+          ${nodeHtml}
+          <div class="constellation-content">
+            <div class="constellation-eyebrow">${dateStr.toUpperCase()} · ${p.category.toUpperCase()}</div>
+            <div class="constellation-answer" style="color:${answerColor};">${answerText}</div>
+            <div class="constellation-clue">${clueLabel}</div>
+          </div>
+          <button class="constellation-action" onclick="startReplay(${daysAgo})" aria-label="${actionText}">${actionText}</button>
         </div>
-        <button class="constellation-action" onclick="startReplay(${daysAgo})" aria-label="${actionText}">${actionText}</button>
+      `;
+    });
+
+    html += `
+        </div>
       </div>
     `;
   });
 
-  html += '</div>';
   list.innerHTML = html;
   list.scrollTop = savedScroll;
+}
+
+function toggleArchiveMonth(monthId) {
+  const container = document.getElementById(monthId);
+  const btn = container.previousElementSibling;
+  const isExpanded = container.style.display !== 'none';
+  container.style.display = isExpanded ? 'none' : 'block';
+  btn.setAttribute('aria-expanded', !isExpanded);
+  const toggle = btn.querySelector('.month-toggle');
+  toggle.textContent = isExpanded ? '+' : '−';
+  localStorage.setItem(`archive-expanded-${monthId}`, !isExpanded);
 }
 
 async function startReplay(daysAgo) {
