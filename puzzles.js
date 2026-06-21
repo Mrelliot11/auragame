@@ -146,7 +146,7 @@ const PUZZLES = [
   {
     answer: "Coco Chanel",
     category: "Person",
-    aura: "#1A1A1A",
+    aura: "#cea4a4",
     clues: [
       "The color black, before it was allowed to be elegant.",
       "She removed things until what remained was undeniable.",
@@ -2025,7 +2025,7 @@ const PUZZLES = [
 {
   answer: "Chanel",
   category: "Brand",
-  aura: "#1A1A1A",
+  aura: "#dda6a6",
   clues: [
     "Elegance distilled into black, white, and a famous scent.",
     "Two interlocked letters that mean timeless taste.",
