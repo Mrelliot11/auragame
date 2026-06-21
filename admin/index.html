@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AURA Admin</title>
-<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="images/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -328,6 +328,10 @@ input[type="color"] { position: absolute; opacity: 0; width: 0; height: 0; }
             <select class="field-input" id="f-category" onchange="onFormChange()">
               <option value="Person">Person</option>
               <option value="Place">Place</option>
+              <option value="Animal">Animal</option>
+              <option value="Plant">Plant</option>
+              <option value="Band">Band</option>
+              <option value="Book">Book</option>
               <option value="Brand">Brand</option>
               <option value="Film">Film</option>
               <option value="Album">Album</option>
@@ -402,7 +406,7 @@ input[type="color"] { position: absolute; opacity: 0; width: 0; height: 0; }
   <!-- LIST TAB -->
   <div class="tab-panel" id="panel-list">
     <div class="list-header">
-      <div class="section-label" style="margin:0"><span id="list-label">All Puzzles</span> (<span id="list-count">0</span>)</div>
+      <div class="section-label" style="margin:0">(<span id="list-label">All Puzzles</span>) (<span id="list-count">0</span>)</div>
       <input class="search-input" type="text" placeholder="Search answer or category…" oninput="filterList(this.value)">
     </div>
     <div class="cat-filter" id="cat-filter"></div>
@@ -637,10 +641,11 @@ function renderList() {
     const matchSearch = !searchQuery || p.answer.toLowerCase().includes(searchQuery) || p.category.toLowerCase().includes(searchQuery);
     return matchCat && matchSearch;
   });
-
   document.getElementById('no-results').style.display = filtered.length === 0 ? 'block' : 'none';
   document.getElementById('list-count').textContent = filtered.length;
   document.getElementById('list-label').textContent = activeCategory === 'All' ? 'All Puzzles' : activeCategory + ' Puzzles';
+  document.getElementById('list-label').textContent = activeCategory === 'All' ? 'All Puzzles' : activeCategory + ' Puzzles';
+  document.getElementById('list-count').textContent = filtered.length;
 
   tbody.innerHTML = filtered.map((p, _) => {
     const i = PUZZLES.indexOf(p);
