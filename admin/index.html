@@ -396,7 +396,21 @@ input[type="color"] { position: absolute; opacity: 0; width: 0; height: 0; }
         <div class="export-card">
           <div class="schedule-line" id="schedule-line">Fill in the form to see scheduling info.</div>
           <pre class="export-code" id="export-code">// fill in the puzzle form</pre>
-          <button class="btn btn-primary" onclick="copyExport()">Copy entry</button>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-green" style="flex:1" onclick="saveToDb()" id="save-db-btn">Save to database ↑</button>
+            <button class="btn btn-sec" onclick="copyExport()">Copy JS entry</button>
+          </div>
+          <div id="db-config" style="margin-top:14px;display:none">
+            <div class="field" style="margin-bottom:10px">
+              <div class="field-label">Worker URL</div>
+              <input class="field-input" id="db-api-url" type="text" placeholder="https://aura-game.YOUR_SUBDOMAIN.workers.dev" oninput="saveDbConfig()">
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <div class="field-label">Admin Token</div>
+              <input class="field-input" id="db-admin-token" type="password" placeholder="your ADMIN_TOKEN secret" oninput="saveDbConfig()">
+            </div>
+          </div>
+          <button class="btn btn-sec" style="margin-top:10px;width:100%;font-size:10px" onclick="toggleDbConfig()" id="db-config-toggle">⚙ Configure API connection</button>
         </div>
       </div>
 
@@ -435,6 +449,76 @@ input[type="color"] { position: absolute; opacity: 0; width: 0; height: 0; }
 const ADMIN_PASSWORD = 'aura2025'; // change this line to update the password
 const EPOCH = new Date('2025-01-01T00:00:00Z');
 
+// DB connection config — stored in sessionStorage so it clears on tab close
+function loadDbConfig() {
+  const url = sessionStorage.getItem('aura_api_url') || '';
+  const token = sessionStorage.getItem('aura_admin_token') || '';
+  if (url) document.getElementById('db-api-url').value = url;
+  if (token) document.getElementById('db-admin-token').value = token;
+}
+
+function saveDbConfig() {
+  sessionStorage.setItem('aura_api_url', document.getElementById('db-api-url').value.trim());
+  sessionStorage.setItem('aura_admin_token', document.getElementById('db-admin-token').value.trim());
+}
+
+function toggleDbConfig() {
+  const el = document.getElementById('db-config');
+  const btn = document.getElementById('db-config-toggle');
+  const open = el.style.display === 'none';
+  el.style.display = open ? 'block' : 'none';
+  btn.textContent = open ? '⚙ Hide API config' : '⚙ Configure API connection';
+}
+
+async function saveToDb() {
+  const apiUrl = (sessionStorage.getItem('aura_api_url') || '').trim();
+  const token = (sessionStorage.getItem('aura_admin_token') || '').trim();
+
+  if (!apiUrl || !token) {
+    showToast('Set Worker URL and Admin Token first (⚙ below)');
+    document.getElementById('db-config').style.display = 'block';
+    document.getElementById('db-config-toggle').textContent = '⚙ Hide API config';
+    return;
+  }
+
+  const answer = document.getElementById('f-answer').value.trim();
+  const category = document.getElementById('f-category').value;
+  const aura = document.getElementById('f-aura').value.trim() || '#8B5CF6';
+  const clues = getClues();
+
+  if (!answer || clues.some(c => !c)) {
+    showToast('Complete all fields before saving');
+    return;
+  }
+
+  const btn = document.getElementById('save-db-btn');
+  btn.textContent = 'Saving…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${apiUrl}/api/puzzle`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ answer, category, aura, clues }),
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      showToast(`Saved as puzzle #${data.idx + 1} (${data.total} total in DB)`);
+    } else {
+      showToast(`Error: ${data.error || res.status}`);
+    }
+  } catch (err) {
+    showToast(`Network error: ${err.message}`);
+  } finally {
+    btn.textContent = 'Save to database ↑';
+    btn.disabled = false;
+  }
+}
+
 // ── GATE ──
 function checkPassword(e) {
   e.preventDefault();
@@ -455,6 +539,7 @@ function openApp() {
   initClues();
   buildList();
   onFormChange();
+  loadDbConfig();
 }
 
 function daysUntilRepeat() {

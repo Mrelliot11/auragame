@@ -296,6 +296,53 @@ async function apiGet(path) {
   } catch { return null; }
 }
 
+// ── PUZZLE FETCH ─────────────────────────────────────────────────────────────
+// Returns puzzle object from API when connected, falls back to puzzles.js.
+// Caches in sessionStorage so replays and page interactions don't re-fetch.
+
+async function fetchPuzzle(idx) {
+  const cacheKey = `aura_puzzle_${idx}`;
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached) return JSON.parse(cached);
+
+  if (API_URL) {
+    try {
+      const r = await fetch(`${API_URL}/api/puzzle/${idx}`);
+      if (r.ok) {
+        const data = await r.json();
+        sessionStorage.setItem(cacheKey, JSON.stringify(data));
+        return data;
+      }
+    } catch {}
+  }
+
+  // Offline fallback — use puzzles.js
+  return PUZZLES[idx] || null;
+}
+
+async function fetchTodayPuzzle() {
+  const cacheKey = `aura_puzzle_today_${getUTCDateKey()}`;
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached) return JSON.parse(cached);
+
+  if (API_URL) {
+    try {
+      const r = await fetch(`${API_URL}/api/puzzle/today`);
+      if (r.ok) {
+        const data = await r.json();
+        sessionStorage.setItem(cacheKey, JSON.stringify(data));
+        // Also cache by idx so fetchPuzzle(idx) hits cache too
+        sessionStorage.setItem(`aura_puzzle_${data.idx}`, JSON.stringify(data));
+        return data;
+      }
+    } catch {}
+  }
+
+  // Offline fallback
+  const idx = getDayIndex();
+  return { idx, ...PUZZLES[idx] };
+}
+
 function reportResultToAPI(won, cluesUsed, puzzleIdx) {
   apiPost('/api/result', { puzzleIdx, won, cluesUsed });
 }
@@ -405,27 +452,27 @@ function goArchive() {
   renderArchive();
 }
 
-function startGame() {
+async function startGame() {
   const result = getTodayResult();
   if (result) {
-    // Already played today — restore the finished state and show the result modal
     loadCompletedGame(result);
     return;
   }
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('game').classList.add('active');
-  initGame(getDayIndex(), false);
+  const p = await fetchTodayPuzzle();
+  initGame(p.idx, false, p);
 }
 
 // ── STATE ──
 let puzzle, cluesShown, wrongGuesses, gameOver, shareStr, shareCanvas, isReplay, replayDaysAgo;
 const MAX_WRONG = 3;
 
-function initGame(puzzleIdx, replayMode) {
+function initGame(puzzleIdx, replayMode, puzzleData) {
   if (puzzleIdx === undefined) puzzleIdx = getDayIndex();
   isReplay = !!replayMode;
 
-  puzzle = PUZZLES[puzzleIdx];
+  puzzle = puzzleData || PUZZLES[puzzleIdx];
   cluesShown = 1;
   wrongGuesses = 0;
   gameOver = false;
@@ -908,12 +955,13 @@ function renderArchiveItems() {
   list.scrollTop = savedScroll;
 }
 
-function startReplay(daysAgo) {
+async function startReplay(daysAgo) {
   replayDaysAgo = daysAgo;
   const pIdx = getPuzzleIndexForDaysAgo(daysAgo);
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('game').classList.add('active');
-  initGame(pIdx, true);
+  const p = await fetchPuzzle(pIdx);
+  initGame(pIdx, true, p);
 }
 
 // ── LOAD COMPLETED GAME ──
@@ -965,8 +1013,13 @@ initTheme();
 initSound();
 showIntro();
 
+// Boot: set aura from local puzzles.js immediately (no flash), then update
+// from API in the background so the color is correct if DB differs.
 document.getElementById('ht-num').textContent = getDayIndex() + 1;
-const todayPuzzle = PUZZLES[getDayIndex()];
-setAura(todayPuzzle.aura);
+setAura(PUZZLES[getDayIndex()].aura);
 updateStartBtn();
+fetchTodayPuzzle().then(p => {
+  if (p && p.aura) setAura(p.aura);
+  document.getElementById('ht-num').textContent = (p.idx ?? getDayIndex()) + 1;
+});
 

@@ -1,14 +1,15 @@
 # AURA Backend — Cloudflare Worker
 
-Handles three optional features that run server-side:
+Handles four optional features that run server-side:
 
 | Feature | Endpoint |
 |---|---|
+| Puzzle database | `GET /api/puzzle/today` · `GET /api/puzzle/:idx` · `POST /api/puzzle` |
 | Global stats | `POST /api/result` · `GET /api/stats/:idx` |
 | Push notifications | `POST /api/push/subscribe` · `DELETE /api/push/subscribe` |
 | Daily push cron | Cloudflare Cron Trigger at 07:00 UTC |
 
-The game runs **fully offline** without this. Set `API_URL` in `game.js` to connect.
+The game runs **fully offline** without this, falling back to `puzzles.js`. Set `API_URL` in `game.js` to connect.
 
 ---
 
@@ -38,13 +39,15 @@ npx wrangler login
 ### 3. Create KV namespaces
 
 ```bash
+npx wrangler kv:namespace create AURA_PUZZLES
+npx wrangler kv:namespace create AURA_PUZZLES --preview
 npx wrangler kv:namespace create AURA_STATS
 npx wrangler kv:namespace create AURA_STATS --preview
 npx wrangler kv:namespace create AURA_SUBS
 npx wrangler kv:namespace create AURA_SUBS --preview
 ```
 
-Each command prints an `id`. Paste all four IDs into `wrangler.toml` where indicated.
+Each command prints an `id`. Paste all six IDs into `wrangler.toml` where indicated.
 
 ### 4. Generate VAPID keys (for push notifications)
 
@@ -57,6 +60,7 @@ This prints a public key and a private key. **Do not commit the private key.**
 ### 5. Set Worker secrets
 
 ```bash
+npx wrangler secret put ADMIN_TOKEN         # any long random string — used to authenticate POST /api/puzzle
 npx wrangler secret put VAPID_PUBLIC_KEY    # paste public key from step 4
 npx wrangler secret put VAPID_PRIVATE_KEY   # paste private key from step 4
 npx wrangler secret put VAPID_EMAIL         # e.g. mailto:you@example.com
@@ -92,6 +96,14 @@ The Worker runs at `http://localhost:8787`. Temporarily set `API_URL` in `game.j
 ---
 
 ## How it works
+
+### Puzzle database
+
+Puzzles are stored in `AURA_PUZZLES` KV as individual entries (`puzzle:0`, `puzzle:1`, …) with a `puzzles:count` key tracking the total. The game fetches today's puzzle from `GET /api/puzzle/today` (which computes `daysSinceEpoch % count` server-side). Results are cached in `sessionStorage` so replays don't re-fetch.
+
+When `API_URL` is `null`, the game falls back to the local `puzzles.js` file — so everything still works offline.
+
+To add a puzzle via the admin tool: open `/admin/`, fill in the form, click **Save to database ↑**, and enter your Worker URL + Admin Token when prompted. The token is the `ADMIN_TOKEN` secret you set in step 5 above.
 
 ### Global stats
 

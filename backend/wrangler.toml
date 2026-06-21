@@ -27,8 +27,14 @@ binding = "AURA_SUBS"
 id = "REPLACE_WITH_SUBS_KV_ID"
 preview_id = "REPLACE_WITH_SUBS_KV_PREVIEW_ID"
 
+[[kv_namespaces]]
+binding = "AURA_PUZZLES"
+id = "REPLACE_WITH_PUZZLES_KV_ID"
+preview_id = "REPLACE_WITH_PUZZLES_KV_PREVIEW_ID"
+
 # ── SECRETS (do NOT store values here) ───────────────────────────────────────
 # Set with: wrangler secret put VAPID_PUBLIC_KEY   (paste value when prompted)
 #           wrangler secret put VAPID_PRIVATE_KEY
 #           wrangler secret put VAPID_EMAIL         (e.g. mailto:you@example.com)
+#           wrangler secret put ADMIN_TOKEN         (any long random string)
 # Generate VAPID keys first: cd backend && npm run generate-keys

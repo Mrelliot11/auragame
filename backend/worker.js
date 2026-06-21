@@ -3,6 +3,9 @@
  *
  * Routes:
  *   GET  /api/health               → { ok: true }
+ *   GET  /api/puzzle/today         → today's puzzle { idx, answer, category, aura, clues }
+ *   GET  /api/puzzle/:idx          → puzzle by index (for archive replays)
+ *   POST /api/puzzle               → save a new puzzle (requires Authorization: Bearer ADMIN_TOKEN)
  *   POST /api/result               → record a played result for global stats
  *   GET  /api/stats/:idx           → { total, wins, distribution[5] }
  *   POST /api/push/subscribe       → save a Web Push subscription
@@ -11,10 +14,12 @@
  * Cron (wrangler.toml): "0 7 * * *" → send daily push to all subscribers
  *
  * KV bindings (set in wrangler.toml):
- *   AURA_STATS  — puzzle stats, key: "stats:{puzzleIdx}"
- *   AURA_SUBS   — push subscriptions, key: "sub:{endpointHash}"
+ *   AURA_PUZZLES — puzzle data, key: "puzzle:{idx}", count at "puzzles:count"
+ *   AURA_STATS   — puzzle stats, key: "stats:{puzzleIdx}"
+ *   AURA_SUBS    — push subscriptions, key: "sub:{endpointHash}"
  *
  * Secrets (wrangler secret put):
+ *   ADMIN_TOKEN        — any long random string; required to POST /api/puzzle
  *   VAPID_PUBLIC_KEY   — from `npm run generate-keys`
  *   VAPID_PRIVATE_KEY  — from `npm run generate-keys`
  *   VAPID_EMAIL        — mailto: contact address (e.g. mailto:you@example.com)
@@ -30,7 +35,7 @@ export default {
     const cors = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     };
 
     if (method === 'OPTIONS') {
@@ -48,6 +53,53 @@ export default {
       // ── GET /api/health ────────────────────────────────────────────────────
       if (pathname === '/api/health' && method === 'GET') {
         return json({ ok: true });
+      }
+
+      // ── GET /api/puzzle/today ──────────────────────────────────────────────
+      if (pathname === '/api/puzzle/today' && method === 'GET') {
+        const count = parseInt(await env.AURA_PUZZLES.get('puzzles:count') || '0', 10);
+        if (count === 0) return json({ error: 'no puzzles in database' }, 404);
+        const epoch = new Date('2025-01-01T00:00:00Z');
+        const idx = Math.floor((Date.now() - epoch) / 86400000) % count;
+        const raw = await env.AURA_PUZZLES.get(`puzzle:${idx}`);
+        if (!raw) return json({ error: 'puzzle not found' }, 404);
+        return json({ idx, ...JSON.parse(raw) });
+      }
+
+      // ── GET /api/puzzle/:idx ───────────────────────────────────────────────
+      const puzzleMatch = pathname.match(/^\/api\/puzzle\/(\d+)$/);
+      if (puzzleMatch && method === 'GET') {
+        const idx = parseInt(puzzleMatch[1], 10);
+        const raw = await env.AURA_PUZZLES.get(`puzzle:${idx}`);
+        if (!raw) return json({ error: 'puzzle not found' }, 404);
+        return json({ idx, ...JSON.parse(raw) });
+      }
+
+      // ── POST /api/puzzle ───────────────────────────────────────────────────
+      // Body: { answer, category, aura, clues: string[5] }
+      // Requires: Authorization: Bearer <ADMIN_TOKEN>
+      if (pathname === '/api/puzzle' && method === 'POST') {
+        const auth = request.headers.get('Authorization') || '';
+        if (!env.ADMIN_TOKEN || auth !== `Bearer ${env.ADMIN_TOKEN}`) {
+          return json({ error: 'unauthorized' }, 401);
+        }
+
+        const body = await request.json();
+        const { answer, category, aura, clues } = body;
+
+        if (!answer || !category || !aura || !Array.isArray(clues) || clues.length !== 5) {
+          return json({ error: 'invalid puzzle — requires answer, category, aura, clues[5]' }, 400);
+        }
+        if (clues.some(c => typeof c !== 'string' || !c.trim())) {
+          return json({ error: 'all 5 clues must be non-empty strings' }, 400);
+        }
+
+        const count = parseInt(await env.AURA_PUZZLES.get('puzzles:count') || '0', 10);
+        const newIdx = count;
+        await env.AURA_PUZZLES.put(`puzzle:${newIdx}`, JSON.stringify({ answer, category, aura, clues }));
+        await env.AURA_PUZZLES.put('puzzles:count', String(newIdx + 1));
+
+        return json({ ok: true, idx: newIdx, total: newIdx + 1 });
       }
 
       // ── POST /api/result ───────────────────────────────────────────────────
