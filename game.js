@@ -958,7 +958,8 @@ function renderArchiveItems() {
           <span class="month-count">${groupItems.length}</span>
           <span class="month-toggle">${isExpanded ? '−' : '+'}</span>
         </button>
-        <div class="archive-month-items" id="${monthId}" style="display: ${isExpanded ? 'block' : 'none'};">
+        <div class="archive-month-items constellation-thread" id="${monthId}" style="display: ${isExpanded ? 'block' : 'none'};">
+          <div class="constellation-line"></div>
     `;
 
     groupItems.forEach(({ daysAgo, pIdx, p, result, dateStr }) => {
@@ -1005,6 +1006,7 @@ function renderArchiveItems() {
     });
 
     html += `
+        </div>
         </div>
       </div>
     `;

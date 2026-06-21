@@ -524,10 +524,21 @@ header {
   display: block; margin-bottom: 16px;
 }
 
+/* Constellation thread inside month items */
+.archive-month-items.constellation-thread {
+  position: relative;
+  padding-left: 44px;
+}
+.archive-month-items .constellation-line {
+  position: absolute; left: 55px; top: 8px; bottom: 0;
+  width: 2px; background: linear-gradient(180deg, var(--border) 0%, var(--border) 85%, rgba(58,58,68,0) 100%);
+  z-index: 0;
+}
+
 /* Constellation items (inside month groups) */
 .constellation-item {
   display: flex; gap: 12px; align-items: flex-start;
-  padding-bottom: 20px; position: relative;
+  padding-bottom: 20px; position: relative; z-index: 1;
 }
 .constellation-node {
   width: 24px; height: 24px; flex-shrink: 0;
@@ -640,6 +651,8 @@ header {
   .archive-body.constellation { padding: 14px 12px 20px; }
   .archive-month-btn { padding: 10px 12px; font-size: 9px; }
   .month-count { margin: 0 4px; }
+  .archive-month-items.constellation-thread { padding-left: 38px; }
+  .archive-month-items .constellation-line { left: 18px; }
   .constellation-item { gap: 10px; padding-bottom: 16px; }
   .archive-filters { padding: 10px 14px 2px; }
   .stats-body { padding: 16px 14px; }
