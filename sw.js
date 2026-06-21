@@ -4,9 +4,9 @@ const SHELL = [
   './index.html',
   './game.js',
   './puzzles.js',
-  './favicon.svg',
-  './icon-192.png',
-  './icon-512.png',
+  './images/favicon.svg',
+  './images/icon-192.png',
+  './images/icon-512.png',
   './manifest.json',
 ];
 

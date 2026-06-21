@@ -2,6 +2,7 @@
   "name": "auragame",
   "private": true,
   "scripts": {
+    "dev": "npx serve . -l 8080",
     "test": "node tests/run-all.js"
   }
 }
