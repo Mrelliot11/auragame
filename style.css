@@ -500,7 +500,7 @@ header {
   padding-left: 44px;
 }
 .constellation-line {
-  position: absolute; left: 19px; top: 8px; bottom: 0;
+  position: absolute; left: 55px; top: 8px; bottom: 0;
   width: 2px; background: linear-gradient(180deg, var(--border) 0%, var(--border) 85%, rgba(58,58,68,0) 100%);
   z-index: 0;
 }
@@ -636,7 +636,7 @@ header {
   .archive-body { padding: 14px 14px 20px; }
   .archive-body.constellation { padding: 16px 14px 20px; }
   .constellation-thread { padding-left: 38px; }
-  .constellation-line { left: 17px; }
+  .constellation-line { left: 18px; }
   .constellation-item { gap: 12px; padding-bottom: 20px; }
   .archive-filters { padding: 10px 14px 2px; }
   .stats-body { padding: 16px 14px; }
