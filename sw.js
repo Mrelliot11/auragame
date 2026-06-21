@@ -12,6 +12,7 @@ const SHELL = [
 ];
 
 self.addEventListener('install', e => {
+  if (self.location.protocol === 'file:') { self.skipWaiting(); return; }
   e.waitUntil(
     caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())
   );

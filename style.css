@@ -13,13 +13,33 @@
 }
 
 [data-theme="light"] {
-  --bg: #F5F4F0;
-  --surface: #FFFFFF;
-  --border: #E0DED8;
-  --text: #1A1A1E;
-  --sub: #6B6B78;
-  --dim: #9B9BA8;
-  --modal-bg: rgba(245,244,240,0.92);
+  --bg: #F2F0EC;
+  --surface: #FAFAF8;
+  --border: #C4C0B8;
+  --text: #18181B;
+  --sub: #5C5C6B;
+  --dim: #6B6B78;
+  --aura: #7C3AED;
+  --modal-bg: rgba(242,240,236,0.94);
+}
+
+[data-theme="light"] .aura-orb {
+  opacity: 0.22;
+  filter: blur(28px);
+}
+[data-theme="light"] .aura-orb.bloom {
+  opacity: 0.5;
+}
+[data-theme="light"] .eg-card,
+[data-theme="light"] .clue-card,
+[data-theme="light"] .stat-tile,
+[data-theme="light"] .archive-item,
+[data-theme="light"] .modal {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+[data-theme="light"] .guess-field,
+[data-theme="light"] .field-input {
+  background: #FFFFFF;
 }
 
 html, body {
