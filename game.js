@@ -194,7 +194,14 @@ function saveResult(won, cluesUsed) {
 // ── STATS ──
 function getStats() {
   const raw = localStorage.getItem('aura_stats');
-  return raw ? JSON.parse(raw) : { currentStreak: 0, maxStreak: 0, totalPlayed: 0, totalWon: 0, distribution: [0, 0, 0, 0, 0] };
+  const stats = raw ? JSON.parse(raw) : {};
+  return {
+    currentStreak: stats.currentStreak || 0,
+    maxStreak: stats.maxStreak || 0,
+    totalPlayed: stats.totalPlayed || 0,
+    totalWon: stats.totalWon || 0,
+    distribution: (Array.isArray(stats.distribution) && stats.distribution.length === 5) ? stats.distribution : [0, 0, 0, 0, 0],
+  };
 }
 
 function saveStats(stats) {
@@ -233,7 +240,7 @@ const ABBREVIATIONS = {
 
 function normalizeGuess(s) {
   return s.normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036F]/g, '')
     .toLowerCase()
     .replace(/^(the |a |an )/, '')
     .replace(/[^a-z0-9]/g, '')
@@ -341,19 +348,18 @@ async function offerPushNotifications() {
 }
 
 // ── HELPERS ──
+const EPOCH = new Date('2025-01-01T00:00:00Z');
+
 function getDayIndex() {
-  const epoch = new Date('2025-01-01T00:00:00Z');
-  return Math.floor((Date.now() - epoch) / 86400000) % PUZZLES.length;
+  return Math.floor((Date.now() - EPOCH) / 86400000) % PUZZLES.length;
 }
 
 function getDaysElapsed() {
-  const epoch = new Date('2025-01-01T00:00:00Z');
-  return Math.floor((Date.now() - epoch) / 86400000);
+  return Math.floor((Date.now() - EPOCH) / 86400000);
 }
 
 function getPuzzleIndexForDaysAgo(daysAgo) {
-  const epoch = new Date('2025-01-01T00:00:00Z');
-  const raw = Math.floor((Date.now() - daysAgo * 86400000 - epoch) / 86400000);
+  const raw = Math.floor((Date.now() - daysAgo * 86400000 - EPOCH) / 86400000);
   return ((raw % PUZZLES.length) + PUZZLES.length) % PUZZLES.length;
 }
 
@@ -497,12 +503,14 @@ function renderClues() {
   }, 80);
 }
 
+let revealing = false;
 function revealNext() {
-  if (gameOver) return;
+  if (gameOver || revealing) return;
   if (cluesShown >= puzzle.clues.length) {
     showToast('All clues revealed');
     return;
   }
+  revealing = true;
   cluesShown++;
   renderDots();
   renderClues();
@@ -510,6 +518,7 @@ function revealNext() {
   playReveal();
   vibrate(30);
   announce(`Clue ${cluesShown} revealed.`);
+  setTimeout(() => { revealing = false; }, 300);
 }
 
 function updateRevealBtn() {
@@ -533,6 +542,7 @@ function submitGuess() {
 
   if (checkGuess(raw, puzzle.answer)) {
     gameOver = true;
+    field.value = '';
     field.blur();
     document.getElementById('aura-orb').classList.add('bloom');
     playWin();
@@ -672,6 +682,7 @@ function hexToRgb(hex) {
 }
 
 function generateShareImage(won, cluesUsed, puzzleIdx, dotsStr) {
+  const p = PUZZLES[puzzleIdx];
   const S = 1080;
   const canvas = document.createElement('canvas');
   canvas.width = S;
@@ -703,7 +714,7 @@ function generateShareImage(won, cluesUsed, puzzleIdx, dotsStr) {
   // Puzzle number + category
   ctx.fillStyle = '#5A5A68';
   ctx.font = '400 22px "DM Sans", Arial, sans-serif';
-  ctx.fillText(`#${puzzleIdx + 1}  ·  ${puzzle.category.toUpperCase()}`, S / 2, 258);
+  ctx.fillText(`#${puzzleIdx + 1}  ·  ${p.category.toUpperCase()}`, S / 2, 258);
 
   // Divider
   ctx.strokeStyle = '#3A3A44';
@@ -726,10 +737,10 @@ function generateShareImage(won, cluesUsed, puzzleIdx, dotsStr) {
   if (won) {
     ctx.fillStyle = auraHex;
     ctx.font = 'italic 300 86px "Cormorant Garamond", Georgia, serif';
-    if (ctx.measureText(puzzle.answer).width > S * 0.84) {
+    if (ctx.measureText(p.answer).width > S * 0.84) {
       ctx.font = 'italic 300 58px "Cormorant Garamond", Georgia, serif';
     }
-    ctx.fillText(puzzle.answer, S / 2, 612);
+    ctx.fillText(p.answer, S / 2, 612);
   } else {
     ctx.fillStyle = '#E05C5C';
     ctx.font = '300 26px "DM Sans", Arial, sans-serif';
@@ -909,7 +920,7 @@ function startReplay(daysAgo) {
 function loadCompletedGame(result) {
   const idx = getDayIndex();
   puzzle = PUZZLES[idx];
-  cluesShown = Math.min(result.cluesUsed, puzzle.clues.length);
+  cluesShown = Math.max(1, Math.min(result.cluesUsed, puzzle.clues.length));
   wrongGuesses = result.won ? 0 : MAX_WRONG;
   gameOver = true;
   isReplay = false;
@@ -957,6 +968,5 @@ showIntro();
 document.getElementById('ht-num').textContent = getDayIndex() + 1;
 const todayPuzzle = PUZZLES[getDayIndex()];
 setAura(todayPuzzle.aura);
-document.getElementById('start-btn').style.background = todayPuzzle.aura;
 updateStartBtn();
 
