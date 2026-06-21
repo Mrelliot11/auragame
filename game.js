@@ -589,7 +589,9 @@ function submitGuess() {
   const raw = field.value.trim();
   if (!raw) return;
 
+  console.log(`[submitGuess] Checking guess: "${raw}" against answer: "${puzzle.answer}"`);
   if (checkGuess(raw, puzzle.answer)) {
+    console.log(`[submitGuess] ✓ Correct! Calling showResult(true) in 300ms`);
     gameOver = true;
     field.value = '';
     field.blur();
@@ -624,10 +626,12 @@ function submitGuess() {
 
 // ── RESULT ──
 function showResult(won) {
+  console.log(`[showResult] Called with won=${won}, isReplay=${isReplay}, cluesShown=${cluesShown}`);
   const cluesUsed = cluesShown;
   const puzzleIdx = isReplay ? getPuzzleIndexForDaysAgo(replayDaysAgo) : getDayIndex();
 
   if (!isReplay) saveResult(won, cluesUsed);
+  else console.log(`[showResult] Skipped saveResult because isReplay=true`);
 
   // On loss: reveal all remaining clues in the game background
   if (!won && cluesShown < puzzle.clues.length) {
