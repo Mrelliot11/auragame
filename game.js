@@ -183,20 +183,24 @@ function getTodayResult() {
 }
 
 function saveResult(won, cluesUsed) {
-  if (isReplay) {
-    console.log('[saveResult] Skipped: isReplay=true');
+  const key = isReplay ? getUTCDateKey(replayDaysAgo) : getUTCDateKey();
+  const existing = localStorage.getItem(key);
+
+  // For replays, always save (overwrite if exists). For fresh plays, save only once.
+  if (!isReplay && existing) {
+    console.log(`[saveResult] Skipped: key ${key} already exists (fresh play)`);
     return;
   }
-  const key = getUTCDateKey();
-  if (localStorage.getItem(key)) {
-    console.log(`[saveResult] Skipped: key ${key} already exists`);
-    return;
-  }
+
   const data = { won, cluesUsed, ts: Date.now() };
   localStorage.setItem(key, JSON.stringify(data));
-  console.log(`[saveResult] Saved: key=${key}, data=${JSON.stringify(data)}`);
-  updateStats(won, cluesUsed);
-  reportResultToAPI(won, cluesUsed, getDayIndex());
+  console.log(`[saveResult] Saved: key=${key}, data=${JSON.stringify(data)}, isReplay=${isReplay}`);
+
+  // Only update stats for fresh plays, not replays
+  if (!isReplay) {
+    updateStats(won, cluesUsed);
+    reportResultToAPI(won, cluesUsed, getDayIndex());
+  }
 }
 
 // ── STATS ──
@@ -403,7 +407,7 @@ async function offerPushNotifications() {
 }
 
 // ── HELPERS ──
-const EPOCH = new Date('2025-01-01T00:00:00Z');
+const EPOCH = new Date('2026-01-01T00:00:00Z');
 
 function getDayIndex() {
   return Math.floor((Date.now() - EPOCH) / 86400000) % PUZZLES.length;
