@@ -980,14 +980,14 @@ function renderArchiveItems() {
       if (won) {
         const rgb = hexToRgb(p.aura).join(',');
         nodeHtml = `<div class="${nodeClass}" style="
-          background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), ${p.aura}, rgba(${rgb},0.15) 60%, transparent 75%);
+          background: radial-gradient(circle at 35% 30%, rgba(255,255,255,1), ${p.aura}, rgba(${rgb},0.3) 60%, rgba(${rgb},0.1) 75%);
           box-shadow: 0 0 24px ${p.aura}dd, 0 0 12px ${p.aura}99, inset 0 0 10px ${p.aura}77;
-          border: 1px solid rgba(${rgb},0.3);
+          border: 1px solid rgba(${rgb},0.5);
         "></div>`;
       } else if (played) {
-        nodeHtml = `<div class="${nodeClass}" style="background: ${p.aura}; opacity: 0.42;"></div>`;
+        nodeHtml = `<div class="${nodeClass}" style="background: ${p.aura}; opacity: 1;"></div>`;
       } else {
-        nodeHtml = `<div class="${nodeClass}" style="border: 1.5px solid #45454f; background: transparent;"></div>`;
+        nodeHtml = `<div class="${nodeClass}" style="border: 1.5px solid #45454f; background: var(--bg);"></div>`;
       }
 
       const actionText = played ? 'Replay ↗' : 'Play ↗';
