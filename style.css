@@ -505,7 +505,7 @@ header {
   z-index: 0;
 }
 .constellation-item {
-  display: flex; gap: 14px; align-items: flex-start;
+  display: flex; gap: 12px; align-items: flex-start;
   padding-bottom: 24px; position: relative; z-index: 1;
 }
 .constellation-node {
@@ -532,6 +532,16 @@ header {
 .constellation-clue {
   font-size: 10px; color: var(--dim); letter-spacing: 0.3px;
 }
+.constellation-action {
+  background: none; border: 1px solid var(--border); color: var(--sub);
+  border-radius: 8px; padding: 6px 10px; font-size: 11px; font-weight: 500;
+  font-family: 'DM Sans', sans-serif; letter-spacing: 0.5px;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s;
+  margin-left: auto;
+}
+.constellation-action:hover { border-color: var(--aura); color: var(--aura); }
+.constellation-action:focus-visible { outline: 2px solid var(--aura); outline-offset: 2px; }
 
 @keyframes auraPulse {
   0%, 100% { transform: scale(1); }

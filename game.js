@@ -958,6 +958,7 @@ function renderArchiveItems() {
       nodeHtml = `<div class="${nodeClass}" style="border: 1.5px solid #45454f; background: transparent;"></div>`;
     }
 
+    const actionText = played ? 'Replay ↗' : 'Play ↗';
     html += `
       <div class="constellation-item">
         ${nodeHtml}
@@ -966,6 +967,7 @@ function renderArchiveItems() {
           <div class="constellation-answer" style="color:${answerColor};">${answerText}</div>
           <div class="constellation-clue">${clueLabel}</div>
         </div>
+        <button class="constellation-action" onclick="startReplay(${daysAgo})" aria-label="${actionText}">${actionText}</button>
       </div>
     `;
   });
