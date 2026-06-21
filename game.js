@@ -451,6 +451,7 @@ function goStats() {
 function goArchive() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('archive').classList.add('active');
+  document.getElementById('aura-orb').classList.remove('bloom');
   renderArchive();
 }
 
