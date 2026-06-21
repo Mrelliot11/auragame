@@ -402,7 +402,7 @@ input[type="color"] { position: absolute; opacity: 0; width: 0; height: 0; }
   <!-- LIST TAB -->
   <div class="tab-panel" id="panel-list">
     <div class="list-header">
-      <div class="section-label" style="margin:0">All Puzzles (<span id="list-count">0</span>)</div>
+      <div class="section-label" style="margin:0"><span id="list-label">All Puzzles</span> (<span id="list-count">0</span>)</div>
       <input class="search-input" type="text" placeholder="Search answer or category…" oninput="filterList(this.value)">
     </div>
     <div class="cat-filter" id="cat-filter"></div>
@@ -615,7 +615,6 @@ function buildList() {
     `<div class="cat-pill${c === 'All' ? ' active' : ''}" onclick="setCatFilter('${c}', this)">${c}</div>`
   ).join('');
 
-  document.getElementById('list-count').textContent = PUZZLES.length;
   renderList();
 }
 
@@ -640,6 +639,8 @@ function renderList() {
   });
 
   document.getElementById('no-results').style.display = filtered.length === 0 ? 'block' : 'none';
+  document.getElementById('list-count').textContent = filtered.length;
+  document.getElementById('list-label').textContent = activeCategory === 'All' ? 'All Puzzles' : activeCategory + ' Puzzles';
 
   tbody.innerHTML = filtered.map((p, _) => {
     const i = PUZZLES.indexOf(p);
@@ -665,7 +666,7 @@ function loadPuzzle(i) {
   document.getElementById('color-swatch').style.background = p.aura;
   const textareas = document.querySelectorAll('.clue-textarea');
   p.clues.forEach((c, idx) => { if (textareas[idx]) textareas[idx].value = c; });
-  switchTab('create', document.querySelector('.tab'));
+  switchTab('create', document.querySelector('.tab[onclick*="create"]'));
   onFormChange();
   showToast(`Loaded puzzle #${i + 1} — ${p.answer}`);
 }

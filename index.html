@@ -8,10 +8,10 @@
 
 <!-- Open Graph -->
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://aura.game/">
+<meta property="og:url" content="https://mrelliot11.github.io/auragame/">
 <meta property="og:title" content="AURA — daily vibe puzzle">
 <meta property="og:description" content="Every day, something famous is described through feeling alone. No names. No facts. Just aura.">
-<meta property="og:image" content="https://aura.game/og.svg">
+<meta property="og:image" content="https://mrelliot11.github.io/auragame/og.svg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 
@@ -19,7 +19,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="AURA — daily vibe puzzle">
 <meta name="twitter:description" content="Every day, something famous is described through feeling alone. No names. No facts. Just aura.">
-<meta name="twitter:image" content="https://aura.game/og.svg">
+<meta name="twitter:image" content="https://mrelliot11.github.io/auragame/og.svg">
 
 <title>AURA</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -272,7 +272,6 @@ header {
   flex-shrink: 0;
 }
 .dot.used { background: var(--aura); }
-.dot.wrong { background: #E05C5C; }
 
 /* ── INPUT AREA ── */
 .input-area {
@@ -618,7 +617,7 @@ header {
 <!-- ══ GAME ══ -->
 <div id="game" class="screen">
   <header>
-    <div class="logo">A<span id="g-logo-u">U</span>RA</div>
+    <div class="logo">A<span>U</span>RA</div>
     <div class="hdr-right">Daily · #<b id="g-num">—</b></div>
     <div class="hdr-controls">
       <button class="hdr-btn" id="g-sound-btn" onclick="toggleSound()" aria-label="Enable sound" aria-pressed="false">♪</button>
@@ -716,7 +715,7 @@ header {
 <script src="game.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js');
+    navigator.serviceWorker.register('sw.js');
   }
 </script>
 </body>

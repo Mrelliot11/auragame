@@ -1,13 +1,13 @@
 const CACHE = 'aura-v1';
 const SHELL = [
-  '/',
-  '/index.html',
-  '/game.js',
-  '/puzzles.js',
-  '/favicon.svg',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/manifest.json',
+  './',
+  './index.html',
+  './game.js',
+  './puzzles.js',
+  './favicon.svg',
+  './icon-192.png',
+  './icon-512.png',
+  './manifest.json',
 ];
 
 self.addEventListener('install', e => {
