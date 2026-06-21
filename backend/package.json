@@ -8,6 +8,6 @@
     "generate-keys": "node setup.js"
   },
   "devDependencies": {
-    "wrangler": "^3.78.0"
+    "wrangler": "^4.103.0"
   }
 }
