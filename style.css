@@ -528,8 +528,9 @@ header {
 .archive-month-items.constellation-thread {
   position: relative;
   padding-left: 44px;
-  background: linear-gradient(90deg, transparent 54px, var(--border) 54px, var(--border) 56px, transparent 56px);
-  background-size: 100% 24px;
+  background: radial-gradient(circle, var(--border) 30%, transparent 30%);
+  background-size: 2px 6px;
+  background-position: 55px 0;
   background-repeat: repeat-y;
   background-attachment: local;
 }
