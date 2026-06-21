@@ -175,12 +175,19 @@
       <button class="hdr-btn" onclick="goHow()" aria-label="Close">✕</button>
     </div>
   </header>
+  <div class="archive-top">
+    <div class="archive-title">Your aura, lately</div>
+    <div class="archive-meta">
+      <span id="archive-period">Last 30 days</span>
+      <span id="archive-streak" style="color:#8B5CF6;"></span>
+    </div>
+  </div>
   <div class="archive-filters">
     <button class="filter-pill active" data-filter="all" onclick="setArchiveFilter('all')">All</button>
     <button class="filter-pill" data-filter="played" onclick="setArchiveFilter('played')">Played</button>
     <button class="filter-pill" data-filter="unplayed" onclick="setArchiveFilter('unplayed')">Unplayed</button>
   </div>
-  <div class="archive-body" id="archive-list"></div>
+  <div class="archive-body constellation" id="archive-list"></div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>

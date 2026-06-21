@@ -891,11 +891,10 @@ function renderArchiveItems() {
     return;
   }
 
-  // Group entries by month
-  const months = []; // [{ label, key, items: [] }]
-  const monthIndex = {};
   const maxDaysAgo = Math.min(daysElapsed, PUZZLES.length);
+  const items = [];
 
+  // Collect all items (most recent first)
   for (let daysAgo = 1; daysAgo <= maxDaysAgo; daysAgo++) {
     const pIdx = getPuzzleIndexForDaysAgo(daysAgo);
     const p = PUZZLES[pIdx];
@@ -906,58 +905,80 @@ function renderArchiveItems() {
     if (archiveFilter === 'unplayed' && result) continue;
 
     const d = new Date(Date.now() - daysAgo * 86400000);
-    const monthKey = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-    const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
-    if (!monthIndex[monthKey]) {
-      monthIndex[monthKey] = { label: monthKey, items: [] };
-      months.push(monthIndex[monthKey]);
-    }
-    monthIndex[monthKey].items.push({ daysAgo, pIdx, p, result, dateStr });
+    items.push({ daysAgo, pIdx, p, result, dateStr, d });
   }
 
-  if (months.length === 0) {
+  if (items.length === 0) {
     list.innerHTML = '<div class="archive-empty">No puzzles match this filter yet.</div>';
     return;
   }
 
-  let html = '';
-  months.forEach((month, mIdx) => {
-    const isFirst = mIdx === 0;
-    const playedCount = month.items.filter(e => e.result).length;
-    const countLabel = `${playedCount}/${month.items.length}`;
+  // Compute streak from results
+  let streak = 0;
+  for (let daysAgo = 1; daysAgo <= maxDaysAgo; daysAgo++) {
+    const resultRaw = localStorage.getItem(getUTCDateKey(daysAgo));
+    const result = resultRaw ? JSON.parse(resultRaw) : null;
+    if (result && result.won) streak++;
+    else break;
+  }
+
+  // Update header
+  document.getElementById('archive-streak').textContent = streak > 0 ? `·${streak}-day streak` : '';
+
+  // Render constellation
+  let html = '<div class="constellation-thread"><div class="constellation-line"></div>';
+
+  items.forEach(({ daysAgo, pIdx, p, result, dateStr }) => {
+    const played = !!result;
+    const won = result && result.won;
+    const num = String(pIdx + 1).padStart(3, '0');
+
+    let nodeClass = 'constellation-node';
+    if (won) nodeClass += ' win';
+    else if (played) nodeClass += ' loss';
+    else nodeClass += ' unplayed';
+
+    const answerColor = played ? p.aura : 'var(--dim)';
+    const answerText = played ? p.answer : `Aura #${num}`;
+    const clueLabel = won ? `Solved in ${result.cluesUsed} of 5 clues` : (played ? 'Missed — all 5 clues' : 'Not played yet');
+
+    // Build node with proper styling for aura glow
+    let nodeHtml = '';
+    if (won) {
+      // Create a unique style for each node's glow
+      const winNode = `
+        <div class="${nodeClass}" style="
+          background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.8), ${p.aura}, rgba(${hexToRgb(p.aura).join(',')},0.1) 58%, transparent 74%);
+          box-shadow: 0 0 16px ${p.aura}b0, inset 0 0 8px ${p.aura}60;
+        "></div>
+      `;
+      nodeHtml = winNode;
+    } else {
+      const color = played ? p.aura : 'transparent';
+      const border = played ? 'none' : '1.5px solid #45454f';
+      const opacity = played ? '0.42' : '1';
+      nodeHtml = `<div class="${nodeClass}" style="
+        color: ${color};
+        border: ${border};
+        opacity: ${opacity};
+      "></div>`;
+    }
+
     html += `
-      <button class="archive-month-btn${isFirst ? ' open' : ''}" onclick="toggleArchiveMonth(this)">
-        <span class="archive-month-label">${month.label.toUpperCase()}</span>
-        <span class="archive-month-meta">
-          <span class="archive-month-count">${countLabel}</span>
-          <span class="archive-month-chevron">▾</span>
-        </span>
-      </button>
-      <div class="archive-month-items${isFirst ? '' : ' collapsed'}">`;
-
-    month.items.forEach(({ daysAgo, pIdx, p, result, dateStr }) => {
-      const resultIcon = result ? `<div class="archive-result">${result.won ? '✨' : '⚫'}</div>` : '';
-      html += `
-        <div class="archive-item">
-          <div class="archive-info">
-            <div class="archive-meta">#${pIdx + 1} · ${dateStr.toUpperCase()} · ${p.category.toUpperCase()}</div>
-            <div class="archive-answer" style="color:${result ? p.aura : 'var(--dim)'}">
-              ${result ? p.answer : `Aura #${pIdx + 1}`}
-            </div>
-          </div>
-          <div class="archive-right">
-            ${resultIcon}
-            <button class="archive-play" onclick="startReplay(${daysAgo})" aria-label="Play Aura #${pIdx + 1}">
-              ${result ? 'Replay ↗' : 'Play ↗'}
-            </button>
-          </div>
-        </div>`;
-    });
-
-    html += `</div>`;
+      <div class="constellation-item">
+        ${nodeHtml}
+        <div class="constellation-content">
+          <div class="constellation-eyebrow">${dateStr.toUpperCase()} · ${p.category.toUpperCase()}</div>
+          <div class="constellation-answer" style="color:${answerColor};">${answerText}</div>
+          <div class="constellation-clue">${clueLabel}</div>
+        </div>
+      </div>
+    `;
   });
 
+  html += '</div>';
   list.innerHTML = html;
   list.scrollTop = savedScroll;
 }
