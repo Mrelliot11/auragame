@@ -982,6 +982,7 @@ function renderArchiveItems() {
         nodeHtml = `<div class="${nodeClass}" style="
           background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), ${p.aura}, rgba(${rgb},0.15) 60%, transparent 75%);
           box-shadow: 0 0 24px ${p.aura}dd, 0 0 12px ${p.aura}99, inset 0 0 10px ${p.aura}77;
+          border: 1px solid rgba(${rgb},0.3);
         "></div>`;
       } else if (played) {
         nodeHtml = `<div class="${nodeClass}" style="background: ${p.aura}; opacity: 0.42;"></div>`;
