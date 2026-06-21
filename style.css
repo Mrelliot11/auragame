@@ -622,7 +622,10 @@ header {
   .how-body { padding: 16px 14px 8px; }
   .game-body { padding: 0 14px; }
   .input-area { padding: 8px 14px 16px; }
-  .archive-body { padding: 10px 14px 20px; }
+  .archive-body { padding: 14px 14px 20px; }
+  .archive-body.constellation { padding: 14px 14px 20px; }
+  .constellation-thread { padding-left: 34px; }
+  .constellation-line { left: 15px; }
   .archive-filters { padding: 10px 14px 2px; }
   .stats-body { padding: 16px 14px; }
   .stats-summary { gap: 6px; }
