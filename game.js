@@ -183,10 +183,18 @@ function getTodayResult() {
 }
 
 function saveResult(won, cluesUsed) {
-  if (isReplay) return;
+  if (isReplay) {
+    console.log('[saveResult] Skipped: isReplay=true');
+    return;
+  }
   const key = getUTCDateKey();
-  if (localStorage.getItem(key)) return;
-  localStorage.setItem(key, JSON.stringify({ won, cluesUsed, ts: Date.now() }));
+  if (localStorage.getItem(key)) {
+    console.log(`[saveResult] Skipped: key ${key} already exists`);
+    return;
+  }
+  const data = { won, cluesUsed, ts: Date.now() };
+  localStorage.setItem(key, JSON.stringify(data));
+  console.log(`[saveResult] Saved: key=${key}, data=${JSON.stringify(data)}`);
   updateStats(won, cluesUsed);
   reportResultToAPI(won, cluesUsed, getDayIndex());
 }
@@ -898,8 +906,10 @@ function renderArchiveItems() {
   for (let daysAgo = 1; daysAgo <= maxDaysAgo; daysAgo++) {
     const pIdx = getPuzzleIndexForDaysAgo(daysAgo);
     const p = PUZZLES[pIdx];
-    const resultRaw = localStorage.getItem(getUTCDateKey(daysAgo));
+    const key = getUTCDateKey(daysAgo);
+    const resultRaw = localStorage.getItem(key);
     const result = resultRaw ? JSON.parse(resultRaw) : null;
+    console.log(`[Archive] daysAgo=${daysAgo}, key=${key}, resultRaw=${resultRaw}, result=${JSON.stringify(result)}`);
 
     if (archiveFilter === 'played' && !result) continue;
     if (archiveFilter === 'unplayed' && result) continue;
