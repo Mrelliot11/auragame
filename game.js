@@ -947,23 +947,15 @@ function renderArchiveItems() {
     // Build node with proper styling for aura glow
     let nodeHtml = '';
     if (won) {
-      // Create a unique style for each node's glow
-      const winNode = `
-        <div class="${nodeClass}" style="
-          background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.8), ${p.aura}, rgba(${hexToRgb(p.aura).join(',')},0.1) 58%, transparent 74%);
-          box-shadow: 0 0 16px ${p.aura}b0, inset 0 0 8px ${p.aura}60;
-        "></div>
-      `;
-      nodeHtml = winNode;
+      // Win node: glowing orb with color-matched glow
+      const rgb = hexToRgb(p.aura).join(',');
+      nodeHtml = `<div class="${nodeClass}" style="background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.8), ${p.aura}, rgba(${rgb},0.1) 58%, transparent 74%); box-shadow: 0 0 16px ${p.aura}cc, inset 0 0 8px ${p.aura}66;"></div>`;
+    } else if (played) {
+      // Loss node: dim circle
+      nodeHtml = `<div class="${nodeClass}" style="background: ${p.aura}; opacity: 0.42;"></div>`;
     } else {
-      const color = played ? p.aura : 'transparent';
-      const border = played ? 'none' : '1.5px solid #45454f';
-      const opacity = played ? '0.42' : '1';
-      nodeHtml = `<div class="${nodeClass}" style="
-        color: ${color};
-        border: ${border};
-        opacity: ${opacity};
-      "></div>`;
+      // Unplayed node: hollow ring
+      nodeHtml = `<div class="${nodeClass}" style="border: 1.5px solid #45454f; background: transparent;"></div>`;
     }
 
     html += `
