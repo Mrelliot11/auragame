@@ -947,9 +947,12 @@ function renderArchiveItems() {
     // Build node with proper styling for aura glow
     let nodeHtml = '';
     if (won) {
-      // Win node: glowing orb with color-matched glow
+      // Win node: glowing orb with color-matched glow and animation
       const rgb = hexToRgb(p.aura).join(',');
-      nodeHtml = `<div class="${nodeClass}" style="background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.8), ${p.aura}, rgba(${rgb},0.1) 58%, transparent 74%); box-shadow: 0 0 16px ${p.aura}cc, inset 0 0 8px ${p.aura}66;"></div>`;
+      nodeHtml = `<div class="${nodeClass}" style="
+        background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), ${p.aura}, rgba(${rgb},0.15) 60%, transparent 75%);
+        box-shadow: 0 0 24px ${p.aura}dd, 0 0 12px ${p.aura}99, inset 0 0 10px ${p.aura}77;
+      "></div>`;
     } else if (played) {
       // Loss node: dim circle
       nodeHtml = `<div class="${nodeClass}" style="background: ${p.aura}; opacity: 0.42;"></div>`;
