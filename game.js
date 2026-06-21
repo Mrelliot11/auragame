@@ -629,7 +629,7 @@ function showResult(won) {
   document.getElementById('s-sub').textContent = won ? `${cluesUsed}/5 clues` : 'Did not get it';
   document.getElementById('s-dots').textContent = dotsStr;
 
-  shareStr = `AURA #${puzzleIdx + 1}\n${puzzle.category}\n\n${dotsStr}\n\n${won ? `Got it in ${cluesUsed}/5 clues 👻` : `Couldn't place it 🌫️`}\nplay at: aura.game`;
+  shareStr = `AURA #${puzzleIdx + 1}\n${puzzle.category}\n\n${dotsStr}\n\n${won ? `Got it in ${cluesUsed}/5 clues 👻` : `Couldn't place it 🌫️`}\nmrelliot11.github.io/auragame`;
 
   const dest = isReplay ? goArchive : goHow;
   const backBtn = document.getElementById('m-back-btn');
@@ -739,7 +739,7 @@ function generateShareImage(won, cluesUsed, puzzleIdx, dotsStr) {
   // Footer branding
   ctx.fillStyle = '#3A3A44';
   ctx.font = '400 22px "DM Sans", Arial, sans-serif';
-  ctx.fillText('aura.game', S / 2, S - 80);
+  ctx.fillText('mrelliot11.github.io/auragame', S / 2, S - 80);
 
   return canvas;
 }

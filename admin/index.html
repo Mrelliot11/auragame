@@ -618,6 +618,7 @@ function buildList() {
   filter.innerHTML = cats.map(c =>
     `<div class="cat-pill${c === 'All' ? ' active' : ''}" onclick="setCatFilter('${c}', this)">${c}</div>`
   ).join('');
+
   renderList();
 }
 
@@ -641,6 +642,8 @@ function renderList() {
     return matchCat && matchSearch;
   });
   document.getElementById('no-results').style.display = filtered.length === 0 ? 'block' : 'none';
+  document.getElementById('list-count').textContent = filtered.length;
+  document.getElementById('list-label').textContent = activeCategory === 'All' ? 'All Puzzles' : activeCategory + ' Puzzles';
   document.getElementById('list-label').textContent = activeCategory === 'All' ? 'All Puzzles' : activeCategory + ' Puzzles';
   document.getElementById('list-count').textContent = filtered.length;
 
@@ -668,7 +671,7 @@ function loadPuzzle(i) {
   document.getElementById('color-swatch').style.background = p.aura;
   const textareas = document.querySelectorAll('.clue-textarea');
   p.clues.forEach((c, idx) => { if (textareas[idx]) textareas[idx].value = c; });
-  switchTab('create', document.querySelector('.tab'));
+  switchTab('create', document.querySelector('.tab[onclick*="create"]'));
   onFormChange();
   showToast(`Loaded puzzle #${i + 1} — ${p.answer}`);
 }
