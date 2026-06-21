@@ -95,7 +95,7 @@ html, body {
   height: clamp(240px, 80vw, 340px);
   border-radius: 50%;
   background: radial-gradient(circle, var(--aura) 0%, transparent 70%);
-  opacity: 0.13;
+  opacity: 0;
   top: -80px; left: 50%; transform: translateX(-50%);
   pointer-events: none;
   transition: opacity 1.2s ease, background 1.5s ease;
