@@ -187,14 +187,10 @@ function saveResult(won, cluesUsed) {
   const existing = localStorage.getItem(key);
 
   // For replays, always save (overwrite if exists). For fresh plays, save only once.
-  if (!isReplay && existing) {
-    console.log(`[saveResult] Skipped: key ${key} already exists (fresh play)`);
-    return;
-  }
+  if (!isReplay && existing) return;
 
   const data = { won, cluesUsed, ts: Date.now() };
   localStorage.setItem(key, JSON.stringify(data));
-  console.log(`[saveResult] Saved: key=${key}, data=${JSON.stringify(data)}, isReplay=${isReplay}`);
 
   // Only update stats for fresh plays, not replays
   if (!isReplay) {
@@ -593,9 +589,7 @@ function submitGuess() {
   const raw = field.value.trim();
   if (!raw) return;
 
-  console.log(`[submitGuess] Checking guess: "${raw}" against answer: "${puzzle.answer}"`);
   if (checkGuess(raw, puzzle.answer)) {
-    console.log(`[submitGuess] ✓ Correct! Calling showResult(true) in 300ms`);
     gameOver = true;
     field.value = '';
     field.blur();
@@ -630,12 +624,10 @@ function submitGuess() {
 
 // ── RESULT ──
 function showResult(won) {
-  console.log(`[showResult] Called with won=${won}, isReplay=${isReplay}, cluesShown=${cluesShown}`);
   const cluesUsed = cluesShown;
   const puzzleIdx = isReplay ? getPuzzleIndexForDaysAgo(replayDaysAgo) : getDayIndex();
 
-  if (!isReplay) saveResult(won, cluesUsed);
-  else console.log(`[showResult] Skipped saveResult because isReplay=true`);
+  saveResult(won, cluesUsed);
 
   // On loss: reveal all remaining clues in the game background
   if (!won && cluesShown < puzzle.clues.length) {
@@ -917,7 +909,6 @@ function renderArchiveItems() {
     const key = getUTCDateKey(daysAgo);
     const resultRaw = localStorage.getItem(key);
     const result = resultRaw ? JSON.parse(resultRaw) : null;
-    console.log(`[Archive] daysAgo=${daysAgo}, key=${key}, resultRaw=${resultRaw}, result=${JSON.stringify(result)}`);
 
     if (archiveFilter === 'played' && !result) continue;
     if (archiveFilter === 'unplayed' && result) continue;
