@@ -529,20 +529,21 @@ header {
   position: relative;
   padding-left: 44px;
 }
-.archive-month-items .constellation-line {
-  position: absolute; left: 55px; top: 8px; bottom: 0;
-  width: 2px; background: linear-gradient(180deg, var(--border) 0%, var(--border) 85%, rgba(58,58,68,0) 100%);
-  z-index: 0;
-  pointer-events: none;
-  mix-blend-mode: multiply;
-  opacity: 0.4;
-}
 
 /* Constellation items (inside month groups) */
 .constellation-item {
   display: flex; gap: 12px; align-items: flex-start;
   padding-bottom: 20px; position: relative; z-index: 1;
+  --node-size: 24px;
 }
+.constellation-item:first-child { padding-top: 12px; }
+.constellation-item:last-child::after {
+  content: '';
+  position: absolute; left: 55px; top: 50%; bottom: -20px;
+  width: 2px; background: linear-gradient(180deg, var(--border) 0%, rgba(58,58,68,0) 100%);
+  pointer-events: none;
+}
+
 .constellation-node {
   width: 24px; height: 24px; flex-shrink: 0;
   border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -551,6 +552,12 @@ header {
 .constellation-node.win {
   width: 26px; height: 26px; margin-top: 0;
   animation: auraPulse 3.6s ease-in-out infinite;
+}
+.constellation-item::before {
+  content: '';
+  position: absolute; left: 55px; top: -20px; height: 20px;
+  width: 2px; background: linear-gradient(180deg, rgba(58,58,68,0) 0%, var(--border) 100%);
+  pointer-events: none;
 }
 .constellation-content {
   flex: 1; min-width: 0; padding-top: 1px;
@@ -655,7 +662,8 @@ header {
   .archive-month-btn { padding: 10px 12px; font-size: 9px; }
   .month-count { margin: 0 4px; }
   .archive-month-items.constellation-thread { padding-left: 38px; }
-  .archive-month-items .constellation-line { left: 18px; }
+  .constellation-item::before { left: 18px; }
+  .constellation-item::after { left: 18px; }
   .constellation-item { gap: 10px; padding-bottom: 16px; }
   .archive-filters { padding: 10px 14px 2px; }
   .stats-body { padding: 16px 14px; }
