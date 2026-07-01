@@ -424,6 +424,15 @@ function setAura(color) {
   document.documentElement.style.setProperty('--aura', color);
 }
 
+// ── CLUE TYPES ──
+function isImageClue(clue) {
+  return !!clue && typeof clue === 'object' && clue.type === 'image';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 // ── ADMIN ──
 function openAdmin() {
   window.location.href = 'admin/';
@@ -518,16 +527,26 @@ function renderClues() {
   list.innerHTML = '';
 
   for (let i = 0; i < cluesShown; i++) {
+    const clue = puzzle.clues[i];
     const card = document.createElement('div');
     card.className = 'clue-card';
     const num = document.createElement('div');
     num.className = 'clue-num';
     num.textContent = `Clue ${i + 1}`;
-    const txt = document.createElement('div');
-    txt.className = 'clue-text';
-    txt.textContent = `"${puzzle.clues[i]}"`;
     card.appendChild(num);
-    card.appendChild(txt);
+    if (isImageClue(clue)) {
+      const img = document.createElement('img');
+      img.className = 'clue-image';
+      img.src = clue.src;
+      img.alt = clue.alt || `Clue ${i + 1}`;
+      img.loading = 'lazy';
+      card.appendChild(img);
+    } else {
+      const txt = document.createElement('div');
+      txt.className = 'clue-text';
+      txt.textContent = `"${clue}"`;
+      card.appendChild(txt);
+    }
     list.appendChild(card);
   }
 
@@ -666,9 +685,12 @@ function showResult(won) {
     if (missed.length > 0) {
       missedEl.innerHTML =
         '<div class="m-missed-label">Clues you didn\'t see</div>' +
-        missed.map((clue, i) =>
-          `<div class="m-missed-clue"><span class="m-missed-num">Clue ${cluesUsed + i + 1}</span>"${clue}"</div>`
-        ).join('');
+        missed.map((clue, i) => {
+          const num = `<span class="m-missed-num">Clue ${cluesUsed + i + 1}</span>`;
+          return isImageClue(clue)
+            ? `<div class="m-missed-clue">${num}📷 ${escHtml(clue.alt || 'Image clue')}</div>`
+            : `<div class="m-missed-clue">${num}"${escHtml(clue)}"</div>`;
+        }).join('');
       missedEl.style.display = '';
     } else {
       missedEl.style.display = 'none';
