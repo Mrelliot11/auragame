@@ -76,7 +76,7 @@ export default {
       }
 
       // ── POST /api/puzzle ───────────────────────────────────────────────────
-      // Body: { answer, category, aura, clues: string[5] }
+      // Body: { answer, category, aura, clues: (string | { type: 'image', src, alt })[5] }
       // Requires: Authorization: Bearer <ADMIN_TOKEN>
       if (pathname === '/api/puzzle' && method === 'POST') {
         const auth = request.headers.get('Authorization') || '';
@@ -90,8 +90,10 @@ export default {
         if (!answer || !category || !aura || !Array.isArray(clues) || clues.length !== 5) {
           return json({ error: 'invalid puzzle — requires answer, category, aura, clues[5]' }, 400);
         }
-        if (clues.some(c => typeof c !== 'string' || !c.trim())) {
-          return json({ error: 'all 5 clues must be non-empty strings' }, 400);
+        const isValidClue = c => (typeof c === 'string' && c.trim())
+          || (c && typeof c === 'object' && c.type === 'image' && typeof c.src === 'string' && c.src.trim());
+        if (clues.some(c => !isValidClue(c))) {
+          return json({ error: 'all 5 clues must be non-empty strings or { type: "image", src, alt }' }, 400);
         }
 
         const count = parseInt(await env.AURA_PUZZLES.get('puzzles:count') || '0', 10);

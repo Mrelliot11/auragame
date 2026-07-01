@@ -122,6 +122,7 @@
             <div class="preview-clue-card">
               <div class="preview-clue-n">CLUE 1</div>
               <div class="preview-clue-text" id="pv-clue">Your first clue will appear here…</div>
+              <img class="preview-clue-img" id="pv-clue-img" style="display:none">
             </div>
             <div class="preview-input-mock">Your guess…</div>
           </div>
@@ -230,7 +231,7 @@ async function saveToDb() {
   const aura = document.getElementById('f-aura').value.trim() || '#8B5CF6';
   const clues = getClues();
 
-  if (!answer || clues.some(c => !c)) {
+  if (!answer || clues.some(c => !isValidClue(c))) {
     showToast('Complete all fields before saving');
     return;
   }
@@ -316,10 +317,22 @@ function initClues() {
     row.className = 'clue-row';
     row.draggable = true;
     row.dataset.idx = i;
+    row.dataset.type = 'text';
     row.innerHTML = `
       <div class="drag-handle" title="Drag to reorder">⠿</div>
       <div class="clue-num">${i + 1}</div>
-      <textarea class="clue-textarea" placeholder="Clue ${i + 1} — ${i === 0 ? 'hardest, most abstract' : i === 4 ? 'easiest, most recognizable' : 'increasingly specific'}" rows="2" oninput="onFormChange()"></textarea>
+      <div class="clue-body">
+        <div class="clue-type-toggle">
+          <button type="button" class="clue-type-btn active" data-type="text" onclick="setClueType(this,'text')">Aa Text</button>
+          <button type="button" class="clue-type-btn" data-type="image" onclick="setClueType(this,'image')">🖼 Image</button>
+        </div>
+        <textarea class="clue-textarea" placeholder="Clue ${i + 1} — ${i === 0 ? 'hardest, most abstract' : i === 4 ? 'easiest, most recognizable' : 'increasingly specific'}" rows="2" oninput="onFormChange()"></textarea>
+        <div class="clue-image-fields" style="display:none">
+          <input class="field-input clue-image-src" type="text" placeholder="Image URL (https://...)" oninput="onFormChange()">
+          <input class="field-input clue-image-alt" type="text" placeholder="Alt text (shown if the image fails to load)" oninput="onFormChange()">
+          <img class="clue-image-preview">
+        </div>
+      </div>
     `;
     row.addEventListener('dragstart', e => {
       dragSrc = row;
@@ -364,7 +377,31 @@ function renumberClues() {
 }
 
 function getClues() {
-  return [...document.querySelectorAll('.clue-textarea')].map(t => t.value.trim());
+  return [...document.querySelectorAll('.clue-row')].map(row => {
+    if (row.dataset.type === 'image') {
+      const src = row.querySelector('.clue-image-src').value.trim();
+      const alt = row.querySelector('.clue-image-alt').value.trim();
+      return { type: 'image', src, alt };
+    }
+    return row.querySelector('.clue-textarea').value.trim();
+  });
+}
+
+function isValidClue(c) {
+  return typeof c === 'object' ? !!(c && c.src) : !!c;
+}
+
+// ── CLUE TYPE TOGGLE ──
+function applyClueType(row, type) {
+  row.dataset.type = type;
+  row.querySelectorAll('.clue-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+  row.querySelector('.clue-textarea').style.display = type === 'text' ? '' : 'none';
+  row.querySelector('.clue-image-fields').style.display = type === 'image' ? 'flex' : 'none';
+}
+
+function setClueType(btn, type) {
+  applyClueType(btn.closest('.clue-row'), type);
+  onFormChange();
 }
 
 // ── COLOR ──
@@ -396,9 +433,34 @@ function onFormChange() {
   const dup = answer && PUZZLES.some((p, i) => i !== effectiveEditIdx && p.answer.toLowerCase() === answer.toLowerCase());
   document.getElementById('dup-warning').classList.toggle('show', dup);
 
+  // per-row image preview thumbnails
+  document.querySelectorAll('.clue-row').forEach(row => {
+    if (row.dataset.type !== 'image') return;
+    const src = row.querySelector('.clue-image-src').value.trim();
+    const preview = row.querySelector('.clue-image-preview');
+    if (src) { preview.src = src; preview.style.display = 'block'; }
+    else { preview.removeAttribute('src'); preview.style.display = 'none'; }
+  });
+
   // update preview
   document.getElementById('pv-cat').textContent = category.toUpperCase();
-  document.getElementById('pv-clue').textContent = clues[0] || 'Your first clue will appear here…';
+  const firstClue = clues[0];
+  const pvText = document.getElementById('pv-clue');
+  const pvImg = document.getElementById('pv-clue-img');
+  if (firstClue && typeof firstClue === 'object') {
+    pvText.style.display = 'none';
+    if (firstClue.src) {
+      pvImg.src = firstClue.src;
+      pvImg.alt = firstClue.alt || '';
+      pvImg.style.display = 'block';
+    } else {
+      pvImg.style.display = 'none';
+    }
+  } else {
+    pvImg.style.display = 'none';
+    pvText.style.display = '';
+    pvText.textContent = firstClue || 'Your first clue will appear here…';
+  }
   document.getElementById('pv-orb').style.background = `radial-gradient(circle, ${aura} 0%, transparent 70%)`;
   document.getElementById('pv-num').textContent = PUZZLES.length + 1;
 
@@ -414,7 +476,7 @@ function onFormChange() {
     : 'Fill in the form to see scheduling info.';
 
   // export
-  const allFilled = answer && clues.every(c => c.length > 0);
+  const allFilled = answer && clues.every(isValidClue);
   if (allFilled) {
     const entry = buildEntry(answer, category, aura, clues);
     document.getElementById('export-code').textContent = entry;
@@ -425,12 +487,18 @@ function onFormChange() {
 
 function buildEntry(answer, category, aura, clues) {
   const ind = '  ';
+  const clueLines = clues.map(c => {
+    if (typeof c === 'object') {
+      return ind + ind + `{ type: 'image', src: ${JSON.stringify(c.src)}, alt: ${JSON.stringify(c.alt || '')} }`;
+    }
+    return ind + ind + JSON.stringify(c);
+  }).join(',\n');
   return `{
   answer: ${JSON.stringify(answer)},
   category: ${JSON.stringify(category)},
   aura: ${JSON.stringify(aura)},
   clues: [
-${clues.map(c => ind + ind + JSON.stringify(c)).join(',\n')}
+${clueLines}
   ]
 },`;
 }
@@ -504,8 +572,19 @@ function loadPuzzle(i) {
   // Rebuild the clue rows from scratch so no leftover text / reordering from a
   // previously-loaded puzzle survives.
   initClues();
-  const textareas = document.querySelectorAll('.clue-textarea');
-  p.clues.forEach((c, idx) => { if (textareas[idx]) textareas[idx].value = c; });
+  const rows = document.querySelectorAll('.clue-row');
+  p.clues.forEach((c, idx) => {
+    const row = rows[idx];
+    if (!row) return;
+    if (c && typeof c === 'object') {
+      applyClueType(row, 'image');
+      row.querySelector('.clue-image-src').value = c.src || '';
+      row.querySelector('.clue-image-alt').value = c.alt || '';
+    } else {
+      applyClueType(row, 'text');
+      row.querySelector('.clue-textarea').value = c;
+    }
+  });
   switchTab('create', document.querySelector('.tab[onclick*="create"]'));
   onFormChange();
   showToast(`Loaded puzzle #${i + 1} — ${p.answer}`);
