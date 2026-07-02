@@ -1,0 +1,56 @@
+name: Build Android (TWA)
+
+# Manual only — produces a signed .aab (for Play Console) and .apk (for sideload
+# testing) from android/twa-manifest.json. Requires two repo secrets:
+#   ANDROID_KEYSTORE_BASE64    — base64 of the upload keystore (.jks)
+#   ANDROID_KEYSTORE_PASSWORD  — its password (same value covers store + key,
+#                                 since PKCS12 keystores don't support separate ones)
+# See ANDROID.md for how these were generated and where to get them.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Point bubblewrap at the JDK/SDK this workflow just installed
+        run: |
+          mkdir -p ~/.bubblewrap
+          cat > ~/.bubblewrap/config.json <<EOF
+          {"jdkPath": "${JAVA_HOME}", "androidSdkPath": "${ANDROID_HOME}"}
+          EOF
+
+      - name: Decode signing keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/android.keystore
+
+      - name: Build signed app bundle + APK
+        working-directory: android
+        env:
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: npx @bubblewrap/cli build
+
+      - name: Remove keystore before uploading artifacts
+        if: always()
+        run: rm -f android/android.keystore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aura-android-release
+          path: |
+            android/app-release-bundle.aab
+            android/app-release-signed.apk
+          retention-days: 30
