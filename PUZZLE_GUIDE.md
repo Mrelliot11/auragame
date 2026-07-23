@@ -73,6 +73,25 @@ Use hex values. Test the color against both dark and light backgrounds — it's 
 
 ---
 
+## Image Clues
+
+A clue can be an image instead of text. Use an object with `type: "image"` in place of the string:
+
+```js
+clues: [
+  "Infinite repetition of a single dot, until the self disappears.",
+  { type: "image", src: "https://example.com/clue.jpg", alt: "A room of mirrored polka dots" },
+  "Tokyo, 1960s, when nobody wanted to look.",
+  "Pumpkins.",
+  "Her studio is her world and her world is her studio."
+]
+```
+
+- `src` must be a direct image URL (hotlinked or hosted alongside the repo).
+- `alt` is shown if the image fails to load, and in the "clues you didn't see" list on a loss — write it as a short, non-spoiling description, not a giveaway.
+- Image clues follow the same hardest-to-easiest ordering as text clues; they don't have to appear at any fixed position.
+- The admin tool's clue rows have a Text/Image toggle to author these.
+
 ## Edge Cases
 
 **Answers with "The":** Include it in the `answer` field (`"The Beatles"`, `"The Moon"`). The normalize function strips leading articles from guesses, so players don't need to type "The."
