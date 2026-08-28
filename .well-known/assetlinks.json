@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.auragame.twa",
+      "sha256_cert_fingerprints": [
+        "D4:7C:13:8E:44:07:76:24:ED:3D:DB:6C:AF:AE:A1:89:CB:A4:1C:89:06:FE:3A:7F:52:FA:C4:D7:DB:03:06:83"
+      ]
+    }
+  }
+]

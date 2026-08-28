@@ -1,8 +1,10 @@
 {
+  "id": "/",
   "name": "AURA",
   "short_name": "AURA",
   "description": "A daily vibe puzzle. Guess the person, place, or thing from feeling alone.",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#1A1A1E",
   "theme_color": "#1A1A1E",
